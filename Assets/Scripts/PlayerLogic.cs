@@ -7,9 +7,6 @@ public class PlayerLogic : MonoBehaviour
     public float PlayerSpeed = 2.85f;
     public float MaxPlayerSpeed = 5.5f;
 
-    public GameObject VentilatorRune;
-
-    private float respawnTime = 360f;
     void Update()
     {
         Vector3 mousePos = Input.mousePosition;
@@ -26,15 +23,4 @@ public class PlayerLogic : MonoBehaviour
         }
 
     }
-	public IEnumerator RespawnRunesAfterTime()
-	{
-        Debug.Log("руна появится через 6 минут");
-		yield return new WaitForSeconds(respawnTime);
-        VentilatorRune.SetActive(true);
-	}
-	public IEnumerator ReturnPastSpeed()
-	{
-		yield return new WaitForSeconds(25);
-        PlayerSpeed = 2.85f;
-	}
 }
