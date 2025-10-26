@@ -10,13 +10,12 @@ public class HasteRuneLogic : MonoBehaviour
     private CapsuleCollider collider;
     private MeshRenderer meshRenderer;
 
-    public GameObject Player;
     void Start()
     {
         _spawnRunes = FindAnyObjectByType<SpawnRunes>();
         _PlayerLogic = FindAnyObjectByType<PlayerLogic>();
-        collider = FindAnyObjectByType<CapsuleCollider>();
-        meshRenderer = FindAnyObjectByType<MeshRenderer>();
+        collider = GetComponent<CapsuleCollider>();
+        meshRenderer = GetComponent<MeshRenderer>();
     }
     public void OnTriggerEnter(Collider other)
     {

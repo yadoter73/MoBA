@@ -5,10 +5,10 @@ public class SpawnRunes : MonoBehaviour
 {
     [SerializeField] private GameObject[] runesArray;
     
-    private float respawnTime = 360f;
+    private float respawnTime = 10f;
     void Start()
     {
-        
+        StartCoroutine(RespawnRunesAfterTime());
     }
     public IEnumerator RespawnRunesAfterTime()
     {
