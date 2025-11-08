@@ -24,4 +24,8 @@ public class CameraBehaviour : MonoBehaviour
 			transform.Translate(Vector3.back * _screenSpeed * Time.deltaTime);
 		}
 	}
+	void ChangeFOV()
+	{
+		new Vector3(transform.position.x, transform.position.y, transform.position.z);
+	}
 }
