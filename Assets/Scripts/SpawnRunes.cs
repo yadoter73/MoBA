@@ -8,18 +8,20 @@ public class SpawnRunes : MonoBehaviour
     private float respawnTime = 10f;
     void Start()
     {
-        particleRunes = GetComponent<ParticleRunes>();
+        particleRunes = FindAnyObjectByType<ParticleRunes>();
 
         StartCoroutine(RespawnRunesAfterTime());
     }
     public IEnumerator RespawnRunesAfterTime()
     {
-        particleRunes.State = false;
-        Debug.Log(particleRunes.State);
         yield return new WaitForSeconds(respawnTime);
-        Instantiate(runesArray[Random.Range(0, runesArray.Length)], transform.position, Quaternion.identity);
         particleRunes.State = true;
+        yield return new WaitForSeconds(0.2f);
+        particleRunes.State = false;
+        Instantiate(runesArray[Random.Range(0, runesArray.Length)], transform.position, Quaternion.identity);
+        particleRunes.State = false;
     }
+  
 
 }
 
