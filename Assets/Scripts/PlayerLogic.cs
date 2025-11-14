@@ -6,25 +6,41 @@ public class PlayerLogic : MonoBehaviour
     public float MaxPlayerSpeed = 5.5f;
 
     Ray rayToPlane;
-    int chek = 0;
     Vector3 targetPoint;
-    float distance;
+
+    private int movingState = 0;
+    private bool isMoving;
+    private Animator animator;
+    private Animation animation;
+    private float distance;
+    
     void Update()
     {
         Vector3 mousePos = Input.mousePosition;
-        if (Input.GetMouseButton(1))
+        if (Input.GetKeyDown(KeyCode.S))
+        {
+            isMoving = false;
+            movingState = 0;
+        }
+        else if (Input.GetMouseButton(1))
         {
             rayToPlane = Camera.main.ScreenPointToRay(mousePos);
             Plane plane = new Plane(Vector3.up, new Vector3(0, transform.position.y, 0));
             if (plane.Raycast(rayToPlane, out distance))
             {
                 targetPoint = rayToPlane.GetPoint(distance);
-                chek = 1;
+                movingState = 1;
+                isMoving = true;
             }
         }
-        if (chek == 1)
+        if (movingState == 1 && isMoving == true)
         {
             transform.position = Vector3.MoveTowards(transform.position, targetPoint, PlayerSpeed * Time.deltaTime);
         }
     }
+    void Animations()
+    {
+        
+    }
+
 }

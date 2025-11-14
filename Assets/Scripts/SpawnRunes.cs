@@ -16,7 +16,7 @@ public class SpawnRunes : MonoBehaviour
     {
         yield return new WaitForSeconds(respawnTime);
         particleRunes.State = true;
-        yield return new WaitForSeconds(0.2f);
+        yield return new WaitForSeconds(0.1f);
         particleRunes.State = false;
         Instantiate(runesArray[Random.Range(0, runesArray.Length)], transform.position, Quaternion.identity);
         particleRunes.State = false;
