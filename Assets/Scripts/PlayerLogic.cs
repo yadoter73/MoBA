@@ -37,6 +37,10 @@ public class PlayerLogic : MonoBehaviour
         {
             transform.position = Vector3.MoveTowards(transform.position, targetPoint, PlayerSpeed * Time.deltaTime);
         }
+        if (transform.CompareTag("Death"))
+        {
+            Destroy(this);
+        }
     }
     void Animations()
     {
