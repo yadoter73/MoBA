@@ -67,7 +67,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 037b15c4c5c7d80458ce769d5b043333, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -124,10 +124,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 25eb13eb977f5ae4295632b7b71646bf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _spawnRunes: {fileID: 3087998158160666810, guid: 753a730cbf0a600439fc10ca8d4688f4, type: 3}
   _PlayerLogic: {fileID: 499966692348893704, guid: 2a447374d4ec4c3498abddcf6bc08d87, type: 3}
-  Rune: {fileID: 1510209685402067493}
-  Player: {fileID: 0}
 --- !u!54 &3598444702200874375
 Rigidbody:
   m_ObjectHideFlags: 0

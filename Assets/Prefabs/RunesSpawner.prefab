@@ -47,3 +47,5 @@ MonoBehaviour:
   runesArray:
   - {fileID: 1510209685402067493, guid: 8f02232c66ced004cba58394818a9422, type: 3}
   - {fileID: 1175026671160191774, guid: 7895254b2b34b81488a76d33d6647d2b, type: 3}
+  _particleRunes: {fileID: 698794832338484291, guid: c070e0ac88b29b84b84951424ffca423, type: 3}
+  _player: {fileID: 3973785630677102932, guid: 2a447374d4ec4c3498abddcf6bc08d87, type: 3}

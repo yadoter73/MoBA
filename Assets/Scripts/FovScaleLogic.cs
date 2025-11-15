@@ -4,16 +4,15 @@ using UnityEngine;
 public class FovScaleLogic : MonoBehaviour
 {
 	[SerializeField] private SpawnRunes _spawnRunes;
-	[SerializeField] private GameObject _mainCam;
+	[SerializeField] private float transitionDuration = 2f;
 
 	private MeshRenderer meshRenderer;
-    private SphereCollider collider;
+	private SphereCollider collider;
 	void Start()
-    {
+	{
 		_spawnRunes = FindAnyObjectByType<SpawnRunes>();
 		collider = GetComponent<SphereCollider>();
 		meshRenderer = GetComponent<MeshRenderer>();
-		_mainCam = Camera.main.transform.parent.gameObject;
 	}
 	public void OnTriggerEnter(Collider other)
 	{
@@ -21,32 +20,39 @@ public class FovScaleLogic : MonoBehaviour
 		{
 			collider.enabled = false;
 			meshRenderer.enabled = false;
-			_spawnRunes.StartCoroutine(_spawnRunes.RespawnRunesAfterTime());
 			TakeRunes();
+			_spawnRunes.StartCoroutine(_spawnRunes.RespawnRunesAfterTime());
 		}
 	}
 	void TakeRunes()
 	{
-		Vector3 camPos = _mainCam.transform.position;
-		Vector3 newcamPos = _mainCam.transform.position;
-
-		newcamPos.y += 1;
-		StartCoroutine(ReturnFOV(camPos,newcamPos));
-
-		camPos = _mainCam.transform.position;
-		newcamPos = _mainCam.transform.position;
-
-		newcamPos.y -= 1;
-		StartCoroutine(ReturnFOV(camPos, newcamPos));
+		StartCoroutine(ReturnFOV());
 	}
-		float step = 0.05f;
-	public IEnumerator ReturnFOV(Vector3 initpos, Vector3 targetpos)
+
+	public IEnumerator ReturnFOV()
 	{
-		_mainCam.transform.position = initpos;
-		while(_mainCam.transform.position != targetpos)
+		float startFOV = 56f;
+		float targetFOV = 66f;
+		float time = 0f;
+
+		Camera.main.fieldOfView = startFOV;
+
+		while (time < transitionDuration)
 		{
-			_mainCam.transform.position = Vector3.Lerp(_mainCam.transform.position, targetpos, step);
+			time += Time.deltaTime;
 			yield return new WaitForEndOfFrame();
-		}	
+			Camera.main.fieldOfView = Mathf.Lerp(Camera.main.fieldOfView, targetFOV, Time.deltaTime);
+		}
+
+		yield return new WaitForSeconds(5);
+
+		while (time >= 0)
+		{
+			time -= Time.deltaTime;
+			yield return new WaitForEndOfFrame();
+
+			Camera.main.fieldOfView = Mathf.Lerp(Camera.main.fieldOfView, startFOV, Time.deltaTime);
+		}
+
 	}
 }

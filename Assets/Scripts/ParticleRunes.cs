@@ -4,7 +4,7 @@ public class ParticleRunes : MonoBehaviour
 {
     [SerializeField] private ParticleSystem particleEffect;
 
-    public bool State;
+    public bool State = false;
     void Start()
     {
         particleEffect = GetComponent<ParticleSystem>();

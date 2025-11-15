@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class CameraBehaviour : MonoBehaviour
@@ -23,6 +24,7 @@ public class CameraBehaviour : MonoBehaviour
 		{
 			transform.Translate(Vector3.back * _screenSpeed * Time.deltaTime);
 		}
+		
 	}
 	void ChangeFOV()
 	{
