@@ -46,6 +46,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _screenSpeed: 5
+  _player: {fileID: 3973785630677102932, guid: 2a447374d4ec4c3498abddcf6bc08d87, type: 3}
 --- !u!1 &4144323133725910082
 GameObject:
   m_ObjectHideFlags: 0
