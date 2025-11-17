@@ -6,20 +6,20 @@ public class FovScaleLogic : MonoBehaviour
 	[SerializeField] private SpawnRunes _spawnRunes;
 	[SerializeField] private float transitionDuration = 2f;
 
-	private MeshRenderer meshRenderer;
-	private SphereCollider collider;
+	public MeshRenderer MeshRenderer;
+	public Collider Collider;
 	void Start()
 	{
 		_spawnRunes = FindAnyObjectByType<SpawnRunes>();
-		collider = GetComponent<SphereCollider>();
-		meshRenderer = GetComponent<MeshRenderer>();
+		Collider = GetComponent<SphereCollider>();
+		MeshRenderer = GetComponent<MeshRenderer>();
 	}
 	public void OnTriggerEnter(Collider other)
 	{
 		if (other.CompareTag("Player"))
 		{
-			collider.enabled = false;
-			meshRenderer.enabled = false;
+			Collider.enabled = false;
+			MeshRenderer.enabled = false;
 			TakeRunes();
 			_spawnRunes.StartCoroutine(_spawnRunes.RespawnRunesAfterTime());
 		}

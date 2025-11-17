@@ -150,4 +150,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _spawnRunes: {fileID: 3087998158160666810, guid: 753a730cbf0a600439fc10ca8d4688f4, type: 3}
-  _mainCam: {fileID: 2698418564900486069, guid: 5b3670f1e5b30594a8ebdc02e9e685fc, type: 3}
+  transitionDuration: 2
+  meshRenderer: {fileID: 7340777685307632099}
+  collider: {fileID: 8609398357131625975}

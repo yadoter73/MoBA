@@ -125,6 +125,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _PlayerLogic: {fileID: 499966692348893704, guid: 2a447374d4ec4c3498abddcf6bc08d87, type: 3}
+  _spawnRunes: {fileID: 3087998158160666810, guid: 753a730cbf0a600439fc10ca8d4688f4, type: 3}
+  collider: {fileID: 5988936706173196122}
+  meshRenderer: {fileID: 6349707657749258000}
 --- !u!54 &3598444702200874375
 Rigidbody:
   m_ObjectHideFlags: 0

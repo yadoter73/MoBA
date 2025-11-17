@@ -6,22 +6,22 @@ public class HasteRuneLogic : MonoBehaviour
 {
     [SerializeField] private PlayerLogic _PlayerLogic;
     [SerializeField] private SpawnRunes _spawnRunes;
-    private CapsuleCollider collider;
-    private MeshRenderer meshRenderer;
+    public Collider Collider;
+    public MeshRenderer MeshRenderer;
 
     void Start()
     {
         _spawnRunes = FindAnyObjectByType<SpawnRunes>();
         _PlayerLogic = FindAnyObjectByType<PlayerLogic>();
-        collider = GetComponent<CapsuleCollider>();
-        meshRenderer = GetComponent<MeshRenderer>();
+        Collider = GetComponent<CapsuleCollider>();
+        MeshRenderer = GetComponent<MeshRenderer>();
     }
     public void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player"))
         {
-            collider.enabled = false;
-            meshRenderer.enabled = false;
+            Collider.enabled = false;
+            MeshRenderer.enabled = false;
             TakeRunes();
 			_spawnRunes.StartCoroutine(_spawnRunes.RespawnRunesAfterTime());
 		}
