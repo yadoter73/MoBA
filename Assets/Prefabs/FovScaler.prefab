@@ -151,5 +151,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _spawnRunes: {fileID: 3087998158160666810, guid: 753a730cbf0a600439fc10ca8d4688f4, type: 3}
   transitionDuration: 2
-  meshRenderer: {fileID: 7340777685307632099}
-  collider: {fileID: 8609398357131625975}
+  MeshRenderer: {fileID: 7340777685307632099}
+  Collider: {fileID: 8609398357131625975}

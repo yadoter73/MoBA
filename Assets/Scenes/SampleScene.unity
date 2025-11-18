@@ -5816,6 +5816,14 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1661685986}
     - target: {fileID: 3087998158160666810, guid: 753a730cbf0a600439fc10ca8d4688f4, type: 3}
+      propertyPath: _fovLogic
+      value: 
+      objectReference: {fileID: 3681980295854559944, guid: 7895254b2b34b81488a76d33d6647d2b, type: 3}
+    - target: {fileID: 3087998158160666810, guid: 753a730cbf0a600439fc10ca8d4688f4, type: 3}
+      propertyPath: _hasteRune
+      value: 
+      objectReference: {fileID: 3780965860870039979, guid: 8f02232c66ced004cba58394818a9422, type: 3}
+    - target: {fileID: 3087998158160666810, guid: 753a730cbf0a600439fc10ca8d4688f4, type: 3}
       propertyPath: _particles
       value: 
       objectReference: {fileID: 2730918999596032561, guid: c070e0ac88b29b84b84951424ffca423, type: 3}

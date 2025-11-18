@@ -14,11 +14,11 @@ public class CameraBehaviour : MonoBehaviour
             transform.position = new Vector3(alax.transform.position.x, transform.position.y, alax.transform.position.z + 2);
         }
 
-        if (mousePos.x < 50f)
+        if (mousePos.x < 30f)
         {
             transform.Translate(Vector3.left * _screenSpeed * Time.deltaTime);
         }
-        else if (mousePos.x > Screen.width - 50f)
+        else if (mousePos.x > Screen.width - 30f)
         {
             transform.Translate(Vector3.right * _screenSpeed * Time.deltaTime);
         }
@@ -26,7 +26,7 @@ public class CameraBehaviour : MonoBehaviour
         {
             transform.Translate(Vector3.forward * _screenSpeed * Time.deltaTime);
         }
-        else if (mousePos.y < 50f)
+        else if (mousePos.y < 30f)
         {
             transform.Translate(Vector3.back * _screenSpeed * Time.deltaTime);
         }

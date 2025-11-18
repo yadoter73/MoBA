@@ -5,35 +5,43 @@ public class SpawnRunes : MonoBehaviour
 {
     [SerializeField] private GameObject[] runesArray;
     [SerializeField] private GameObject _particles;
-    [SerializeField] private HasteRuneLogic _hasteRune;
-    [SerializeField] private FovScaleLogic _fovLogic;
     [SerializeField] GameObject _player;
 
-    private float respawnTime = 10f;
-    private float timeRemaining = 20f;
+    private const float respawnTime = 30f;
+    private const float InitialDisappearTime = 30f;  
+    private float CurrentTime;
+
     private GameObject RunesArray;
-    float CurrentTime;
+    private GameObject _currentSpawnedRune;
     void Start()
     {
-        _hasteRune = FindAnyObjectByType<HasteRuneLogic>();
-        _fovLogic = FindAnyObjectByType<FovScaleLogic>();
+        InvokeRepeating(nameof(UpdateTimer), 0f, 1f);
         StartCoroutine(RespawnRunesAfterTime());
-        CurrentTime = timeRemaining;
-        timeRemaining = 20 + respawnTime;
+        CurrentTime = InitialDisappearTime;
     }
     public IEnumerator RespawnRunesAfterTime()
     {
-        InvokeRepeating(nameof(UpdateTimer), 0f, 1f);
-        yield return new WaitForSeconds(respawnTime);
-        Vector3 randomVec = _player.transform.position + new Vector3(Random.Range(-15, 15), 0, Random.Range(-15, 15));
-        RunesArray = Instantiate(runesArray[Random.Range(0, runesArray.Length)], randomVec, Quaternion.identity);
-        GameObject gameobject = Instantiate(_particles, randomVec, Quaternion.identity);
-        yield return new WaitForSeconds(0.1f);
-        DestroyImmediate(gameobject, true);
+        while (true)
+        {
+            yield return new WaitForSeconds(respawnTime);
+            if (_currentSpawnedRune != null)
+            {
+                Destroy(_currentSpawnedRune);
+                _currentSpawnedRune = null;
+            }
+            Vector3 randomVec = _player.transform.position + new Vector3(Random.Range(-15, 15), 0, Random.Range(-15, 15));
+            GameObject gameobjectParticles = Instantiate(_particles, randomVec, Quaternion.identity);
+            Destroy(gameobjectParticles, 0.3f);
+            if (runesArray.Length > 0)
+            {
+                _currentSpawnedRune = Instantiate(runesArray[Random.Range(0, runesArray.Length)], randomVec, Quaternion.identity);
+            }
+            CurrentTime = InitialDisappearTime;
+        }
     }
     void UpdateTimer()
     {
-        
+
         if (CurrentTime > 0)
         {
             CurrentTime--;
@@ -41,18 +49,11 @@ public class SpawnRunes : MonoBehaviour
         }
         else if (CurrentTime <= 0)
         {
-            if(_hasteRune.Collider.enabled == true && _hasteRune.MeshRenderer.enabled == true && _hasteRune != null)
+            if (_currentSpawnedRune != null)
             {
-                _hasteRune.Collider.enabled = false;
-                _hasteRune.MeshRenderer.enabled = false;
+                Destroy(_currentSpawnedRune);
+                _currentSpawnedRune = null;
             }
-            else if (_fovLogic.Collider.enabled == true && _fovLogic.MeshRenderer.enabled == true && _fovLogic != null)
-            {
-                _fovLogic.Collider.enabled = false;
-                _fovLogic.MeshRenderer.enabled = false;
-            }
-            Debug.Log("alax");
-            CancelInvoke(nameof(UpdateTimer));
         }
     }
 }

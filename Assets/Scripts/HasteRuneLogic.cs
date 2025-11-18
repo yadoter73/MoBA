@@ -5,13 +5,11 @@ using System.Collections;
 public class HasteRuneLogic : MonoBehaviour
 {
     [SerializeField] private PlayerLogic _PlayerLogic;
-    [SerializeField] private SpawnRunes _spawnRunes;
     public Collider Collider;
     public MeshRenderer MeshRenderer;
 
     void Start()
     {
-        _spawnRunes = FindAnyObjectByType<SpawnRunes>();
         _PlayerLogic = FindAnyObjectByType<PlayerLogic>();
         Collider = GetComponent<CapsuleCollider>();
         MeshRenderer = GetComponent<MeshRenderer>();
@@ -23,8 +21,7 @@ public class HasteRuneLogic : MonoBehaviour
             Collider.enabled = false;
             MeshRenderer.enabled = false;
             TakeRunes();
-			_spawnRunes.StartCoroutine(_spawnRunes.RespawnRunesAfterTime());
-		}
+        }
     }
     void TakeRunes()
     {
@@ -33,7 +30,7 @@ public class HasteRuneLogic : MonoBehaviour
     }
     public IEnumerator ReturnPastSpeed()
     {
-        yield return new WaitForSeconds(25);
+        yield return new WaitForSeconds(15);
         _PlayerLogic.PlayerSpeed = 2.85f;
     }
 

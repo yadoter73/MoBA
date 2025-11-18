@@ -3,14 +3,12 @@ using UnityEngine;
 
 public class FovScaleLogic : MonoBehaviour
 {
-	[SerializeField] private SpawnRunes _spawnRunes;
 	[SerializeField] private float transitionDuration = 2f;
 
 	public MeshRenderer MeshRenderer;
 	public Collider Collider;
 	void Start()
 	{
-		_spawnRunes = FindAnyObjectByType<SpawnRunes>();
 		Collider = GetComponent<SphereCollider>();
 		MeshRenderer = GetComponent<MeshRenderer>();
 	}
@@ -21,7 +19,6 @@ public class FovScaleLogic : MonoBehaviour
 			Collider.enabled = false;
 			MeshRenderer.enabled = false;
 			TakeRunes();
-			_spawnRunes.StartCoroutine(_spawnRunes.RespawnRunesAfterTime());
 		}
 	}
 	void TakeRunes()
