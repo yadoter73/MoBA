@@ -29,7 +29,7 @@ public class SpawnRunes : MonoBehaviour
                 Destroy(_currentSpawnedRune);
                 _currentSpawnedRune = null;
             }
-            Vector3 randomVec = _player.transform.position + new Vector3(Random.Range(-15, 15), 0, Random.Range(-15, 15));
+            Vector3 randomVec = _player.transform.position + new Vector3(Random.Range(-20, 20), 0, Random.Range(-20, 20));
             GameObject gameobjectParticles = Instantiate(_particles, randomVec, Quaternion.identity);
             Destroy(gameobjectParticles, 0.3f);
             if (runesArray.Length > 0)
