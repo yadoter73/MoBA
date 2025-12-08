@@ -1,134 +1,91 @@
 using UnityEngine;
 using UnityEngine.AI;
-using System.Collections;
-using UnityEngine.Animations.Rigging;
-using UnityEngine.Events;
-using System;
-using Unity.VisualScripting;
+using Zenject;
 
 public class EnemyAI : MonoBehaviour
 {
-	[Header("References")]
-	public Transform Player;
-	[SerializeField] private NavMeshAgent _agent;
+    [Inject(Id = "PlayerTransform")] private Transform _player;
+    [Inject(Id = "EnemyTransform")] private Transform _enemy;
+    [Inject(Id = "NavMeshAgent")] private NavMeshAgent _agent;
 
+    public LayerMask whatIsGround, whatIsPlayer;
 
-	[Header("Patrol Settings")]
-	public Vector3 PatrolCenter;
-	public float PatrolRadius = 80f;
-	public float PatrolWaitTime = 2f;
+    public Vector3 walkPoint;
 
-	[Header("Detection Settings")]
-	[SerializeField] private float _detectionRange = 20f;
-	[SerializeField] private float _attackRange = 1.5f;
-	[SerializeField] private float _viewAngle = 90f;
-	[SerializeField] private LayerMask _wallsAndPlayerLayer;
-	[SerializeField] private float _searchDuration;
+    [SerializeField] private float _health;
+    [SerializeField] private float _walkPointRange;
+    [SerializeField] private float _timeBetweenAttacks;
+    [SerializeField] private float _sightRange, _attackRange;
 
-	[SerializeField] private Transform _head;
+    bool walkPointSet;
+    bool alreadyAttacked;
+    public bool playerInSightRange, playerInAttackRange;
 
-	private EnemyState _currentState;
-	private Health _health;
-	private float _distanceToPlayer;
-	private Vector3 _lastKnownPosition;
-	private bool _isMoving;
+    [SerializeField] private GameObject _particles;
+    private void FixedUpdate()
+    {
+        playerInSightRange = Physics.CheckSphere(transform.position, _sightRange, whatIsPlayer);
+        playerInAttackRange = Physics.CheckSphere(transform.position, _attackRange, whatIsPlayer);
 
-	public bool IsMoving => _isMoving;
-	public float SearchDuration => _searchDuration;
-	public float ViewAngle => _viewAngle;
+        if (!playerInSightRange && !playerInAttackRange) Patroling();
+        if (playerInSightRange && !playerInAttackRange) ChasePlayer();
+        if (playerInAttackRange && playerInSightRange) AttackPlayer();
+    }
 
-	public event Action OnShoot;
-	public event Action OnReload;
-	public event Action OnReloadEnd;
+    private void Patroling()
+    {
+        if (!walkPointSet) SearchWalkPoint();
 
-	private void Start()
-	{
-		_health = GetComponent<Health>();
-		_health.OnDie += Die;
-		IsPlayerInFieldOfView();
-		_currentState = new PatrolState(this);
+        if (walkPointSet)
+            _agent.SetDestination(walkPoint);
 
-	}
+        Vector3 distanceToWalkPoint = transform.position - walkPoint;
 
-	private void Update()
-	{
-		_distanceToPlayer = Vector3.Distance(transform.position, Player.position);
-		_isMoving = _agent.velocity.magnitude > _agent.speed / 4;
-		_currentState?.UpdateState();
-		Debug.Log(_currentState.ToString());
-	}
+        if (distanceToWalkPoint.magnitude < 1f)
+            walkPointSet = false;
+    }
+    private void SearchWalkPoint()
+    {
+        float randomZ = Random.Range(-_walkPointRange, _walkPointRange);
+        float randomX = Random.Range(-_walkPointRange, _walkPointRange);
 
-	public void SwitchState(EnemyState newState)
-	{
-		_currentState = newState;
-	}
+        walkPoint = new Vector3(transform.position.x + randomX, transform.position.y, transform.position.z + randomZ);
 
-	public void MoveTo(Vector3 destination)
-	{
-		if (_agent != null && _agent.isActiveAndEnabled)
-		{
-			_agent.SetDestination(destination);
-		}
-	}
+        if (Physics.Raycast(walkPoint, -transform.up, 2f, whatIsGround))
+            walkPointSet = true;
+    }
 
-	public bool IsPlayerInAttackRange() => _distanceToPlayer <= _attackRange;
+    private void ChasePlayer()
+    {
+        _agent.SetDestination(_player.position);
 
-	public bool IsPlayerInFieldOfView(float FOV = -1)
-	{
-		if (FOV < 0)
-		{
-			FOV = _viewAngle;
-		}
+    }
 
+    private void AttackPlayer()
+    {
+        _agent.SetDestination(transform.position);
 
-		Vector3 directionToPlayer = (Player.position - _head.position).normalized;
-		float angle = Vector3.Angle(_head.forward, directionToPlayer);
+        transform.LookAt(_player);
 
-		if (angle > FOV / 2 || !(_distanceToPlayer <= _detectionRange))
-		{
-			return false;
-		}
-
-		if (Physics.Raycast(_head.position, directionToPlayer, out RaycastHit hit, _detectionRange, _wallsAndPlayerLayer))
-		{
-			if (hit.transform != Player)
-			{
-				return false;
-			}
-		}
-
-		return true;
-	}
-
-	public void RotateTowardsPlayer()
-	{
-		Vector3 directionToPlayer = (Player.position - transform.position).normalized;
-
-		Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer);
-
-		targetRotation.x = transform.rotation.x;
-		targetRotation.z = transform.rotation.z;
-
-		transform.rotation = Quaternion.Lerp(
-			transform.rotation,
-			targetRotation,
-			Time.deltaTime * _agent.angularSpeed / 100
-		);
-	}
-
-
-	public void Attack()
-	{
-
-	}
-
-	public void Die()
-	{
-		_agent.enabled = false;
-		this.enabled = false;
-	}
-	private IEnumerator AttackRoutine()
-	{
-		yield return new WaitForSeconds(2);
-	}
+        if (!alreadyAttacked)
+        {
+            float EnemyRotation = _enemy.eulerAngles.y - 35;
+            GameObject gameobjectParticles = Instantiate(_particles, transform.position, Quaternion.Euler(0, EnemyRotation, 0));
+            Destroy(gameobjectParticles, 0.3f);
+            alreadyAttacked = true;
+            Invoke(nameof(ResetAttack), _timeBetweenAttacks);
+        }
+    }
+    private void ResetAttack()
+    {
+        alreadyAttacked = false;
+    }
+    private void DestroyEnemy()
+    {
+        Destroy(gameObject);
+    }
 }
+
+
+
+
