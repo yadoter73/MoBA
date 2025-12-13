@@ -1,48 +1,54 @@
-using System;
+using System.Collections;
 using UnityEngine;
+using Zenject;
 
 public class Health : MonoBehaviour
 {
-    [SerializeField] private float _maxHealth = 100f;
-    [SerializeField] private float _currentHealth;
+    [SerializeField] private float _currentHp;
+    [SerializeField] private EnemyAI _enemy;
+    [SerializeField] private float _maxHp = 100f;
+    [SerializeField] private float _regenRate = 5f;
 
-    public float CurrentHealth => _currentHealth;
-    public bool IsAlive => _currentHealth > 0;
+    private float lastAttackTime;
+    private bool isRegen;
 
-    public event Action OnHit;
-    public event Action OnDie;
     private void Start()
     {
-        _currentHealth = _maxHealth;
+        _enemy = FindAnyObjectByType<EnemyAI>();
+        _currentHp = _maxHp;
+        lastAttackTime = Time.time;
+        StartCoroutine(RegenHp());
+        isRegen = true;
     }
 
-    public void TakeDamage(float amount)
+    public void isAttacked()
     {
-        if (!IsAlive) return;
-
-        _currentHealth -= amount;
-        OnHit?.Invoke();
-        if (_currentHealth <= 0)
+        _currentHp -= _enemy.EnemyDmg;
+        lastAttackTime = Time.time;
+        isRegen = false;
+    }
+    IEnumerator RegenHp()
+    {
+        while (true)
         {
-            Die();
+            if (!isRegen && Time.time - lastAttackTime >= 15f)
+            {
+                isRegen = true;
+            }
+
+            if (isRegen && _currentHp < _maxHp)
+            {
+                _currentHp += _regenRate * Time.deltaTime;
+                _currentHp = Mathf.Min(_currentHp, _maxHp); 
+            }
+            yield return null;
         }
     }
-
-    public void Heal(float amount)
+    private void FixedUpdate()
     {
-        if (!IsAlive) return;
-
-        _currentHealth = Mathf.Min(_currentHealth + amount, _maxHealth);
-    }
-
-    private void Die()
-    {
-        OnDie?.Invoke();
-        this.enabled = false;
-    }
-
-    public float GetHealthParts()
-    {
-        return _currentHealth / _maxHealth;
+        if (_currentHp <= 0)
+        {
+            Destroy(gameObject, 1.5f);
+        }
     }
 }

@@ -12,7 +12,10 @@ public class EnemyAI : MonoBehaviour
 
     public Vector3 walkPoint;
 
-    [SerializeField] private float _health;
+    [SerializeField] private Health _health;
+
+    public float EnemyDmg = 20f;
+
     [SerializeField] private float _walkPointRange;
     [SerializeField] private float _timeBetweenAttacks;
     [SerializeField] private float _sightRange, _attackRange;
@@ -22,6 +25,10 @@ public class EnemyAI : MonoBehaviour
     public bool playerInSightRange, playerInAttackRange;
 
     [SerializeField] private GameObject _particles;
+    private void Start()
+    {
+        _health = FindAnyObjectByType<Health>();
+    }
     private void FixedUpdate()
     {
         playerInSightRange = Physics.CheckSphere(transform.position, _sightRange, whatIsPlayer);
@@ -71,6 +78,7 @@ public class EnemyAI : MonoBehaviour
         {
             float EnemyRotation = _enemy.eulerAngles.y - 35;
             GameObject gameobjectParticles = Instantiate(_particles, transform.position, Quaternion.Euler(0, EnemyRotation, 0));
+            _health.isAttacked();
             Destroy(gameobjectParticles, 0.3f);
             alreadyAttacked = true;
             Invoke(nameof(ResetAttack), _timeBetweenAttacks);
