@@ -1,19 +1,27 @@
 using UnityEngine;
+using System.Collections;
 
 public class PlayerLogic : MonoBehaviour
 {
     public float PlayerSpeed = 2.85f;
     public float MaxPlayerSpeed = 5.5f;
+    public float attackRate = 3f;
+    public int attackDamage = 50;
 
     Ray rayToPlane;
     Vector3 targetPoint;
 
     private int movingState = 0;
     private bool isMoving;
-    private Animator animator;
-    private Animation animation;
     private float distance;
-    
+    private float nextAttackTime = 0f;
+    private bool isAttacking = false;
+
+    [SerializeField] private float attackRadius = 1.2f;
+    [SerializeField] private LayerMask enemyLayer;
+    [SerializeField] private GameObject _particles;
+
+
     void Update()
     {
         Vector3 mousePos = Input.mousePosition;
@@ -41,10 +49,34 @@ public class PlayerLogic : MonoBehaviour
         {
             Destroy(this);
         }
+        if (Input.GetMouseButton(0) && !isAttacking)
+        {
+            StartCoroutine(Attack());
+            nextAttackTime = Time.time + 1f / attackRate;
+        }
     }
-    void Animations()
+    IEnumerator Attack()
     {
-        
-    }
+        isAttacking = true;
+        Collider[] hitColliders = Physics.OverlapSphere(transform.position, attackRadius, enemyLayer);
+        GameObject gameobjectParticles = Instantiate(_particles, transform.position, Quaternion.identity);
+        Destroy(gameobjectParticles, 0.3f);
 
+        foreach (Collider collider in hitColliders)
+        {
+            EnemyHealth enemy = collider.GetComponent<EnemyHealth>();
+            if (enemy != null)
+            {
+                enemy.TakeDamage(attackDamage);
+            }
+        }
+        yield return new WaitForSeconds(attackRate);
+
+        isAttacking = false;
+    }
+    void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, attackRadius);
+    }
 }
