@@ -5,7 +5,7 @@ using Zenject;
 public class Health : MonoBehaviour
 {
     [SerializeField] private float _currentHp;
-    [SerializeField] private EnemyAI _enemy;
+    [Inject] private EnemyAI _enemyAI;
     [SerializeField] private float _maxHp = 100f;
     [SerializeField] private float _regenRate = 5f;
     [SerializeField] private GameObject _particles;
@@ -15,20 +15,11 @@ public class Health : MonoBehaviour
 
     private void Start()
     {
-        _enemy = FindAnyObjectByType<EnemyAI>();
         _currentHp = _maxHp;
         lastAttackTime = Time.time;
         StartCoroutine(RegenHp());
-        isRegen = true;
     }
-
-    public void isAttacked()
-    {
-        _currentHp -= _enemy.EnemyDmg;
-        lastAttackTime = Time.time;
-        isRegen = false;
-        Destroy(gameobjectParticles, 0.3f);
-    }
+ 
     IEnumerator RegenHp()
     {
         while (true)
@@ -40,18 +31,40 @@ public class Health : MonoBehaviour
                 gameobjectParticles.transform.parent = transform;
             }
 
-            if (isRegen && _currentHp < _maxHp)
+            if (isRegen)
             {
-                _currentHp += _regenRate * Time.deltaTime;
-                _currentHp = Mathf.Min(_currentHp, _maxHp); 
+                if (_currentHp < _maxHp)
+                {
+                    _currentHp += _regenRate * Time.deltaTime;
+                    _currentHp = Mathf.Min(_currentHp, _maxHp);
+                }
+                else
+                {
+                    StopRegen();
+                }
             }
-            yield return null;
+            yield return new WaitForSeconds(0.1f);
         }
     }
-    private void FixedUpdate()
+    void StopRegen()
     {
+        isRegen = false;
+        if (_currentHp == _maxHp)
+        {
+           Destroy(gameobjectParticles, 0.3f);
+            gameobjectParticles = null;
+        }
+    }
+    public void isAttacked(float damage)
+    {
+        StopRegen();
+        lastAttackTime = Time.time;
+
+        _currentHp -= damage;
+  
         if (_currentHp <= 0)
         {
+            StopRegen();
             Destroy(gameObject, 0.3f);
         }
     }

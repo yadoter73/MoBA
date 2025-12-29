@@ -5,8 +5,7 @@ using Zenject;
 public class EnemyAI : MonoBehaviour
 {
     [Inject(Id = "PlayerTransform")] private Transform _player;
-    [Inject(Id = "EnemyTransform")] private Transform _enemy;
-    [Inject(Id = "NavMeshAgent")] private NavMeshAgent _agent;
+    [Inject] private Health _playerHealth;
 
     public LayerMask whatIsGround, whatIsPlayer;
 
@@ -24,12 +23,14 @@ public class EnemyAI : MonoBehaviour
     bool alreadyAttacked;
     public bool playerInSightRange, playerInAttackRange;
 
+    private NavMeshAgent _agent;
+
     [SerializeField] private GameObject _particles;
     private void Start()
     {
-        _health = FindAnyObjectByType<Health>();
+        _agent = GetComponent<NavMeshAgent>();
     }
-    private void FixedUpdate()
+    void Update()
     {
         playerInSightRange = Physics.CheckSphere(transform.position, _sightRange, whatIsPlayer);
         playerInAttackRange = Physics.CheckSphere(transform.position, _attackRange, whatIsPlayer);
@@ -58,27 +59,25 @@ public class EnemyAI : MonoBehaviour
 
         walkPoint = new Vector3(transform.position.x + randomX, transform.position.y, transform.position.z + randomZ);
 
-        if (Physics.Raycast(walkPoint, -transform.up, 2f, whatIsGround))
+        if (Physics.Raycast(walkPoint, Vector3.down, 2f, whatIsGround))
             walkPointSet = true;
     }
 
     private void ChasePlayer()
     {
         _agent.SetDestination(_player.position);
-
     }
 
     private void AttackPlayer()
     {
         _agent.SetDestination(transform.position);
 
-        transform.LookAt(_player);
+        transform.LookAt(new Vector3(_player.position.x, transform.position.y, _player.position.z));
 
         if (!alreadyAttacked)
         {
-            float EnemyRotation = _enemy.eulerAngles.y - 35;
-            GameObject gameobjectParticles = Instantiate(_particles, transform.position, Quaternion.Euler(0, EnemyRotation, 0));
-            _health.isAttacked();
+            GameObject gameobjectParticles = Instantiate(_particles, transform.position, transform.rotation);
+            _health.isAttacked(EnemyDmg);
             Destroy(gameobjectParticles, 0.3f);
             alreadyAttacked = true;
             Invoke(nameof(ResetAttack), _timeBetweenAttacks);
