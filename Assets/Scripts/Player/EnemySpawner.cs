@@ -5,7 +5,7 @@ using PrimeTween;
 public class EnemySpawner : MonoBehaviour
 {
     [SerializeField] private GameObject objectToSpawn;
-    [SerializeField] private float radius = 20f;
+    [SerializeField] private float radius = 30f;
     [SerializeField] private Vector2 spawnInterval = new Vector2(30f, 120f);
     [Inject(Id = "PlayerTransform")] private Transform _player;
     [Inject] private IInstantiator _instantiator;

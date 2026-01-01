@@ -7,7 +7,7 @@ public class Health : MonoBehaviour
     [SerializeField] private float _currentHp;
     [Inject] private EnemyAI _enemyAI;
     [SerializeField] private float _maxHp = 100f;
-    [SerializeField] private float _regenRate = 5f;
+    [SerializeField] private float _regenRate = 10f;
     [SerializeField] private GameObject _particles;
     private float lastAttackTime;
     private bool isRegen;
@@ -49,10 +49,10 @@ public class Health : MonoBehaviour
     void StopRegen()
     {
         isRegen = false;
+        lastAttackTime = Time.time;
         if (_currentHp == _maxHp)
         {
            Destroy(gameobjectParticles, 0.3f);
-            gameobjectParticles = null;
         }
     }
     public void isAttacked(float damage)
@@ -65,7 +65,7 @@ public class Health : MonoBehaviour
         if (_currentHp <= 0)
         {
             StopRegen();
-            Destroy(gameObject, 0.3f);
+            gameObject.SetActive(false);
         }
     }
 }

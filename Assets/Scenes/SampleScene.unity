@@ -1010,6 +1010,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 499966692348893704, guid: 2a447374d4ec4c3498abddcf6bc08d87, type: 3}
+      propertyPath: attackRate
+      value: 1.5
+      objectReference: {fileID: 0}
     - target: {fileID: 973481633768550941, guid: 2a447374d4ec4c3498abddcf6bc08d87, type: 3}
       propertyPath: spawnInterval.x
       value: 30
@@ -1021,6 +1025,10 @@ PrefabInstance:
     - target: {fileID: 3973785630677102932, guid: 2a447374d4ec4c3498abddcf6bc08d87, type: 3}
       propertyPath: m_Name
       value: Player
+      objectReference: {fileID: 0}
+    - target: {fileID: 3973785630677102932, guid: 2a447374d4ec4c3498abddcf6bc08d87, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6582208114413985105, guid: 2a447374d4ec4c3498abddcf6bc08d87, type: 3}
       propertyPath: m_LocalPosition.x
@@ -1070,6 +1078,10 @@ PrefabInstance:
       propertyPath: _particles
       value: 
       objectReference: {fileID: 3333744658387813994, guid: 7390282fe66d09148bce600f15f03c3a, type: 3}
+    - target: {fileID: 8530826901214735934, guid: 2a447374d4ec4c3498abddcf6bc08d87, type: 3}
+      propertyPath: _regenRate
+      value: 25
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
