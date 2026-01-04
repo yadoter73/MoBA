@@ -145,7 +145,7 @@ Material:
     - _Dissolve_Tex_Oneminus: 0
     - _DissovleTexRot: 0
     - _DstBlend: 1
-    - _DstBlendAlpha: 0
+    - _DstBlendAlpha: 1
     - _EdgeWidth: 0
     - _Emission: 0
     - _EnvironmentReflections: 1

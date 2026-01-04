@@ -1,11 +1,12 @@
 using System.Collections;
 using Unity.VisualScripting;
 using UnityEngine;
+using Zenject;
 public class SpawnRunes : MonoBehaviour
 {
     [SerializeField] private GameObject[] runesArray;
     [SerializeField] private GameObject _particles;
-    [SerializeField] GameObject _player;
+    [Inject(Id = "PlayerTransform")] private Transform _player;
 
     private const float respawnTime = 30f;
     private const float InitialDisappearTime = 30f;  
