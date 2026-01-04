@@ -1,42 +1,34 @@
 using UnityEngine;
 using Zenject;
 using PrimeTween;
-
+using System.Collections;
 public class EnemySpawner : MonoBehaviour
 {
     [SerializeField] private GameObject objectToSpawn;
     [SerializeField] private float radius = 30f;
-    [SerializeField] private Vector2 spawnInterval = new Vector2(30f, 120f);
     [Inject(Id = "PlayerTransform")] private Transform _player;
-    [Inject] private IInstantiator _instantiator;
-
-    private Sequence _spawnSequence;
 
     private void Start()
-    {Tween.Delay(10).OnComplete(() => _spawnSequence = Sequence.Create()
-            .ChainCallback(SpawnObject));  
-    }
-
-    private void OnDestroy()
     {
-        _spawnSequence.Stop();
+        Tween.Delay(10).OnComplete(() => StartCoroutine(SpawnEnemies()));
     }
-
-    private void SpawnObject()
+    IEnumerator SpawnEnemies()
     {
-        if (_player == null) return;
+        while (true)
+        {
+            float x = Random.Range(-15, 15);
+            float z = Random.Range(-15, 15);
 
-        Vector2 randomPoint = Random.insideUnitCircle * radius;
-        Vector3 spawnPosition = new Vector3(
-            _player.position.x + randomPoint.x,
-            _player.position.y,
-            _player.position.z + randomPoint.y
-        );
-        _instantiator.InstantiatePrefab(objectToSpawn, spawnPosition, Quaternion.identity, null);
-
-        float randomDelay = Random.Range(spawnInterval.x, spawnInterval.y);
-        Debug.Log(randomDelay);
-        Tween.Delay(randomDelay).OnComplete(() => SpawnObject());
+            Vector3 spawnPosition = new Vector3(
+                _player.position.x + x,
+                _player.position.y,
+                _player.position.z + z
+            );
+            float randomDelay = Random.Range(30, 100);
+            Debug.Log(randomDelay);
+            Instantiate(objectToSpawn, spawnPosition, Quaternion.identity);
+            yield return new WaitForSeconds(randomDelay);
+        }
     }
     private void OnDrawGizmos()
     {
