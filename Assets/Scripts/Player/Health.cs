@@ -58,13 +58,11 @@ public class Health : MonoBehaviour
     public void isAttacked(float damage)
     {
         StopRegen();
-        lastAttackTime = Time.time;
 
         _currentHp -= damage;
   
         if (_currentHp <= 0)
         {
-            StopRegen();
             gameObject.SetActive(false);
         }
     }

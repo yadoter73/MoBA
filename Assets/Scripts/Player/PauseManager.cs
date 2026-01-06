@@ -3,14 +3,12 @@ using UnityEngine.SceneManagement;
 
 public class PauseManager : MonoBehaviour
 {
-    public GameObject pauseMenuCanvas; 
+    [SerializeField] private GameObject pauseMenuCanvas;
     private bool isPaused = false;
-    
-
 
     void Update()
     {
-            if (Input.GetKeyDown(KeyCode.Escape))
+        if (Input.GetKeyDown(KeyCode.Escape))
         {
             if (isPaused) Resume();
 
@@ -19,28 +17,14 @@ public class PauseManager : MonoBehaviour
     }
     public void Pause()
     {
-        MonoBehaviour[] allScripts = FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None);
-        foreach (var script in allScripts)
-        {
-            if (script != this)
-            {
-                script.enabled = false;
-            }
-        }
-        pauseMenuCanvas.SetActive(true);           
+        Time.timeScale = 0f;
+        pauseMenuCanvas.SetActive(true);
         isPaused = true;
     }
 
     public void Resume()
     {
-        MonoBehaviour[] allScripts = FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None);
-        foreach (var script in allScripts)
-        {
-            if (script != this)
-            {
-                script.enabled = true;
-            }
-        }
+        Time.timeScale = 1f;
         pauseMenuCanvas.SetActive(false);
         isPaused = false;
     }

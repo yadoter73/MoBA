@@ -1,13 +1,13 @@
 using UnityEngine;
 using System.Collections;
-
+using UnityEngine.Events;
 public class PlayerLogic : MonoBehaviour
 {
     public float PlayerSpeed = 2.85f;
     public float MaxPlayerSpeed = 5.5f;
     public float attackRate = 3f;
     public int attackDamage = 50;
-
+    public UnityEvent OnAttack { get; set; } = new();
     Ray rayToPlane;
     Vector3 targetPoint;
 
@@ -16,13 +16,11 @@ public class PlayerLogic : MonoBehaviour
     private float distance;
     private float nextAttackTime = 0f;
     private bool isAttacking = false;
-
+    
     [SerializeField] private float attackRadius = 1.2f;
     [SerializeField] private LayerMask enemyLayer;
-    [SerializeField] private GameObject _particles;
 
-
-    void Update()
+    void FixedUpdate()
     {
         Vector3 mousePos = Input.mousePosition;
         if (Input.GetKeyDown(KeyCode.S))
@@ -45,10 +43,6 @@ public class PlayerLogic : MonoBehaviour
         {
             transform.position = Vector3.MoveTowards(transform.position, targetPoint, PlayerSpeed * Time.deltaTime);
         }
-        if (transform.CompareTag("Death"))
-        {
-            Destroy(this);
-        }
         if (Input.GetMouseButton(0) && !isAttacking)
         {
             StartCoroutine(Attack());
@@ -59,8 +53,7 @@ public class PlayerLogic : MonoBehaviour
     {
         isAttacking = true;
         Collider[] hitColliders = Physics.OverlapSphere(transform.position, attackRadius, enemyLayer);
-        GameObject gameobjectParticles = Instantiate(_particles, transform.position, Quaternion.identity);
-        Destroy(gameobjectParticles, 0.3f);
+        OnAttack?.Invoke();
 
         foreach (Collider collider in hitColliders)
         {

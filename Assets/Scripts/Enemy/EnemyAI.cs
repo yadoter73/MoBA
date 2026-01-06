@@ -11,8 +11,6 @@ public class EnemyAI : MonoBehaviour
 
     public Vector3 walkPoint;
 
-    [SerializeField] private Health _health;
-
     public float EnemyDmg = 20f;
 
     [SerializeField] private float _walkPointRange;
@@ -77,7 +75,7 @@ public class EnemyAI : MonoBehaviour
         if (!alreadyAttacked)
         {
             GameObject gameobjectParticles = Instantiate(_particles, transform.position, transform.rotation);
-            _health.isAttacked(EnemyDmg);
+            _playerHealth.isAttacked(EnemyDmg);
             Destroy(gameobjectParticles, 0.3f);
             alreadyAttacked = true;
             Invoke(nameof(ResetAttack), _timeBetweenAttacks);
@@ -86,10 +84,6 @@ public class EnemyAI : MonoBehaviour
     private void ResetAttack()
     {
         alreadyAttacked = false;
-    }
-    private void DestroyEnemy()
-    {
-        Destroy(gameObject);
     }
     void OnDrawGizmosSelected()
     {

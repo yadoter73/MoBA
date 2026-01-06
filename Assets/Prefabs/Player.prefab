@@ -173,7 +173,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 417f9c684b4bdd34890319fcc06a2eff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _currentHp: -3860
+  _currentHp: 0
   _maxHp: 100
   _regenRate: 5
   _particles: {fileID: 3333744658387813994, guid: 7390282fe66d09148bce600f15f03c3a, type: 3}
@@ -206,4 +206,3 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   objectToSpawn: {fileID: 9020415075916140531, guid: 601b4cdbfc40d184eba9a7aae54ba820, type: 3}
   radius: 20
-  spawnInterval: {x: 30, y: 120}

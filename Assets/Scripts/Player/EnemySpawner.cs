@@ -7,6 +7,7 @@ public class EnemySpawner : MonoBehaviour
     [SerializeField] private GameObject objectToSpawn;
     [SerializeField] private float radius = 30f;
     [Inject(Id = "PlayerTransform")] private Transform _player;
+    [Inject] DiContainer _container; 
 
     private void Start()
     {
@@ -25,8 +26,8 @@ public class EnemySpawner : MonoBehaviour
                 _player.position.z + z
             );
             float randomDelay = Random.Range(30, 100);
-            Debug.Log(randomDelay);
-            Instantiate(objectToSpawn, spawnPosition, Quaternion.identity);
+            Debug.Log($"{randomDelay} randomDelay");
+            _container.InstantiatePrefab(objectToSpawn, spawnPosition, Quaternion.identity,null);
             yield return new WaitForSeconds(randomDelay);
         }
     }
