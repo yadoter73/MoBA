@@ -17,6 +17,8 @@ public class PauseManager : MonoBehaviour
     }
     public void Pause()
     {
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
         Time.timeScale = 0f;
         pauseMenuCanvas.SetActive(true);
         isPaused = true;
@@ -24,6 +26,8 @@ public class PauseManager : MonoBehaviour
 
     public void Resume()
     {
+        Cursor.visible = false;
+        Cursor.lockState = CursorLockMode.Locked;
         Time.timeScale = 1f;
         pauseMenuCanvas.SetActive(false);
         isPaused = false;
