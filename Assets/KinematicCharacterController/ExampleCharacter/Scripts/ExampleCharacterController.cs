@@ -21,7 +21,7 @@ namespace KinematicCharacterController.Examples
     {
         public float MoveAxisForward;
         public float MoveAxisRight;
-        public Quaternion CameraRotation;
+        public Transform CameraTransform;
         public bool JumpDown;
         public bool CrouchDown;
         public bool CrouchUp;
@@ -69,7 +69,7 @@ namespace KinematicCharacterController.Examples
         public Vector3 Gravity = new Vector3(0, -30f, 0);
         public Transform MeshRoot;
         public Transform CameraFollowPoint;
-        public float CrouchedCapsuleHeight = 1f;
+        public float CrouchedCapsuleHeight = 4f;
         public float CrouchingHeight = 4f;
         public float StandingHeight = 8f;
         public CharacterState CurrentCharacterState { get; private set; }
@@ -137,7 +137,27 @@ namespace KinematicCharacterController.Examples
                     }
             }
         }
-
+        private void FixedUpdate()
+        {
+            if (_cameraRotation != null)
+            {
+                _cameraPlanarDirection = Vector3.ProjectOnPlane(_cameraRotation.rotation * Vector3.forward, Motor.CharacterUp).normalized;
+                if (_cameraPlanarDirection.sqrMagnitude == 0f)
+                {
+                    _cameraPlanarDirection = Vector3.ProjectOnPlane(_cameraRotation.rotation * Vector3.up, Motor.CharacterUp).normalized;
+                }
+                _cameraPlanarRotation = Quaternion.LookRotation(_cameraPlanarDirection, Motor.CharacterUp);
+                switch (OrientationMethod)
+                {
+                    case OrientationMethod.TowardsCamera:
+                        _lookInputVector = _cameraPlanarDirection;
+                        break;
+                }
+            }
+        }
+        private Quaternion _cameraPlanarRotation;
+        private Vector3 _cameraPlanarDirection;
+        private Transform _cameraRotation;
         /// <summary>
         /// This is called every frame by ExamplePlayer in order to tell the character what its inputs are
         /// </summary>
@@ -146,26 +166,16 @@ namespace KinematicCharacterController.Examples
             // Clamp input
             Vector3 moveInputVector = Vector3.ClampMagnitude(new Vector3(inputs.MoveAxisRight, 0f, inputs.MoveAxisForward), 1f);
 
-            // Calculate camera direction and rotation on the character plane
-            Vector3 cameraPlanarDirection = Vector3.ProjectOnPlane(inputs.CameraRotation * Vector3.forward, Motor.CharacterUp).normalized;
-            if (cameraPlanarDirection.sqrMagnitude == 0f)
-            {
-                cameraPlanarDirection = Vector3.ProjectOnPlane(inputs.CameraRotation * Vector3.up, Motor.CharacterUp).normalized;
-            }
-            Quaternion cameraPlanarRotation = Quaternion.LookRotation(cameraPlanarDirection, Motor.CharacterUp);
-
+            _cameraRotation = inputs.CameraTransform;
             switch (CurrentCharacterState)
             {
                 case CharacterState.Default:
                     {
                         // Move and look inputs
-                        _moveInputVector = cameraPlanarRotation * moveInputVector;
+                        _moveInputVector =  moveInputVector;
 
                         switch (OrientationMethod)
                         {
-                            case OrientationMethod.TowardsCamera:
-                                _lookInputVector = cameraPlanarDirection;
-                                break;
                             case OrientationMethod.TowardsMovement:
                                 _lookInputVector = _moveInputVector.normalized;
                                 break;
@@ -296,8 +306,8 @@ namespace KinematicCharacterController.Examples
                             currentVelocity = Motor.GetDirectionTangentToSurface(currentVelocity, effectiveGroundNormal) * currentVelocityMagnitude;
 
                             // Calculate target velocity
-                            Vector3 inputRight = Vector3.Cross(_moveInputVector, Motor.CharacterUp);
-                            Vector3 reorientedInput = Vector3.Cross(effectiveGroundNormal, inputRight).normalized * _moveInputVector.magnitude;
+                            Vector3 inputRight = Vector3.Cross(_cameraPlanarRotation * _moveInputVector, Motor.CharacterUp);
+                            Vector3 reorientedInput = Vector3.Cross(effectiveGroundNormal, inputRight).normalized * (_cameraPlanarRotation * _moveInputVector).magnitude;
                             Vector3 targetMovementVelocity = reorientedInput * MaxStableMoveSpeed;
 
                             // Smooth movement Velocity
@@ -307,9 +317,9 @@ namespace KinematicCharacterController.Examples
                         else
                         {
                             // Add move input
-                            if (_moveInputVector.sqrMagnitude > 0f)
+                            if ((_cameraPlanarRotation * _moveInputVector).sqrMagnitude > 0f)
                             {
-                                Vector3 addedVelocity = _moveInputVector * AirAccelerationSpeed * deltaTime;
+                                Vector3 addedVelocity = (_cameraPlanarRotation * _moveInputVector) * AirAccelerationSpeed * deltaTime;
 
                                 Vector3 currentVelocityOnInputsPlane = Vector3.ProjectOnPlane(currentVelocity, Motor.CharacterUp);
 
@@ -371,7 +381,7 @@ namespace KinematicCharacterController.Examples
 
                                 // Add to the return velocity and reset jump state
                                 currentVelocity += (jumpDirection * JumpUpSpeed) - Vector3.Project(currentVelocity, Motor.CharacterUp);
-                                currentVelocity += (_moveInputVector * JumpScalableForwardSpeed);
+                                currentVelocity += ((_cameraPlanarRotation * _moveInputVector) * JumpScalableForwardSpeed);
                                 _jumpRequested = false;
                                 _jumpConsumed = true;
                                 _jumpedThisFrame = true;
