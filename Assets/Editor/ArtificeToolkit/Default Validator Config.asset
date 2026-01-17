@@ -24,6 +24,8 @@ MonoBehaviour:
       Value: 1
     - Key: CarCrash
       Value: 1
+    - Key: Hospital
+      Value: 1
   validatorTypesMap:
     list:
     - Key: Artifice_ValidatorModule_ScriptableObject_NullReferenceChecker
