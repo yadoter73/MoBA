@@ -13,7 +13,13 @@ public class InputMovementController
         _playerCharacterInputs.CameraTransform = Camera.main.transform;
         _examPlayer.OnPlayerMoveEvent.AddListener(OnPlayerMove);
         _examPlayer.OnPlayerCrouchEvent.AddListener(OnPlayerCrouch);
+        _examPlayer.OnPlayerJumpEvent.AddListener(OnPlayerJump);
     }
+    private void OnPlayerJump(ExamplePlayer.PressedStateEventArgs pressedState)
+    {
+        _playerCharacterInputs.JumpDown = pressedState.State == ExamplePlayer.PressedState.Started;
+		_exampleCharacterController.SetInputs(ref _playerCharacterInputs);
+	}
     private void OnPlayerMove(ExamplePlayer.Vector2EventArgs vector2EventArgs)
     {
         _playerCharacterInputs.MoveAxisRight = vector2EventArgs.Value.x;
