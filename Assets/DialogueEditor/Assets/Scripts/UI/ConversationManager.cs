@@ -627,7 +627,7 @@ namespace DialogueEditor
         private void TurnOnUI()
         {
             DialoguePanel.gameObject.SetActive(true);
-            OptionsPanel.gameObject.SetActive(true);
+            OptionsPanel.gameObject.SetActive(false);
 
             if (BackgroundImage != null)
             {
