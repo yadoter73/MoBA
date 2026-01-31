@@ -10,6 +10,8 @@ public class RegObj : MonoInstaller
     [SerializeField] private ExamplePlayer _examPlayer;
 	[SerializeField] private ExampleCharacterController _exampleCharacterController;
     [SerializeField] private NPCConversation _playerConversation;
+    [SerializeField] private Transform _playerHead;
+    [SerializeField] private InteractionManager _interManager;
     public override void InstallBindings()
     {
         Container.
@@ -28,6 +30,10 @@ public class RegObj : MonoInstaller
             Bind<ExamplePlayer>().
             FromInstance(_examPlayer).
             AsSingle();
+        Container.
+            Bind<InteractionManager>().
+            FromInstance(_interManager).
+            AsSingle();
 
         Container.
             Bind<ExampleCharacterController>().
@@ -38,6 +44,11 @@ public class RegObj : MonoInstaller
             BindInterfacesAndSelfTo<InputMovementController>().
             AsSingle().
             NonLazy();
+
+        Container.Bind<Transform>().
+            WithId("HeadTransform").
+            FromInstance(_playerHead).
+            AsSingle();
     }
 
 }

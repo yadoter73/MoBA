@@ -6,6 +6,7 @@ public class InputMovementController
 	[Inject] private ExampleCharacterController _exampleCharacterController;
 	[Inject] private ExamplePlayer _examPlayer;
 	private PlayerCharacterInputs _playerCharacterInputs;
+	public PlayerCharacterInputs PlayerCharacterInputs => _playerCharacterInputs;
 	[Inject]
 	public void Construct()
 	{
@@ -14,7 +15,6 @@ public class InputMovementController
 		_examPlayer.OnPlayerMoveEvent.AddListener(OnPlayerMove);
 		_examPlayer.OnPlayerCrouchEvent.AddListener(OnPlayerCrouch);
 		_examPlayer.OnPlayerJumpEvent.AddListener(OnPlayerJump);
-		_examPlayer.OnPlayerInteractEvent.AddListener(OnPlayerInteract);
 	}
 	private void OnPlayerJump(ExamplePlayer.PressedStateEventArgs pressedState)
 	{
@@ -31,11 +31,6 @@ public class InputMovementController
 	{
 		_playerCharacterInputs.CrouchDown = pressedState.State == ExamplePlayer.PressedState.Started;
 		_playerCharacterInputs.CrouchUp = pressedState.State == ExamplePlayer.PressedState.Canceled;
-		_exampleCharacterController.SetInputs(ref _playerCharacterInputs);
-	}
-	private void OnPlayerInteract(ExamplePlayer.PressedStateEventArgs pressedState)
-	{
-		_playerCharacterInputs.Interact = pressedState.State == ExamplePlayer.PressedState.Started;
 		_exampleCharacterController.SetInputs(ref _playerCharacterInputs);
 	}
 }

@@ -4,6 +4,7 @@ using UnityEngine;
 using KinematicCharacterController;
 using System;
 using Zenject;
+using UnityEngine.Events;
 
 namespace KinematicCharacterController.Examples
 {
@@ -30,7 +31,6 @@ namespace KinematicCharacterController.Examples
         public bool JumpDown;
         public bool CrouchDown;
         public bool CrouchUp;
-        public bool Interact;
     }
 
     public struct AICharacterInputs
@@ -48,12 +48,10 @@ namespace KinematicCharacterController.Examples
 
     public class ExampleCharacterController : MonoBehaviour, ICharacterController
     {
+        public UnityEvent OnMoveStart { get; private set; } = new();
+        public UnityEvent OnMoveEnd { get; private set; } = new();
+
         public KinematicCharacterMotor Motor;
-
-        [Header("Interact")]
-		[Inject(Id = "PlayerTransform")] private Transform _interactorSource;
-		[SerializeField] private float _interactRange = 3f;
-
 		[Header("Stable Movement")]
         public float MaxStableMoveSpeed = 10f;
         public float StableMovementSharpness = 15f;
@@ -171,11 +169,14 @@ namespace KinematicCharacterController.Examples
         /// <summary>
         /// This is called every frame by ExamplePlayer in order to tell the character what its inputs are
         /// </summary>
+        private float prevMoveInputMagnitude = 0f;
         public void SetInputs(ref PlayerCharacterInputs inputs)
         {
             // Clamp input
             Vector3 moveInputVector = Vector3.ClampMagnitude(new Vector3(inputs.MoveAxisRight, 0f, inputs.MoveAxisForward), 1f);
-
+            if (moveInputVector.magnitude > 0 && prevMoveInputMagnitude == 0f) OnMoveStart?.Invoke();
+            if (moveInputVector.magnitude == 0 && prevMoveInputMagnitude > 0f) OnMoveEnd?.Invoke();
+            prevMoveInputMagnitude = moveInputVector.magnitude;
             _cameraRotation = inputs.CameraTransform;
             switch (CurrentCharacterState)
             {
@@ -191,18 +192,7 @@ namespace KinematicCharacterController.Examples
                                 break;
                         }
                         // Interact input
-                        if (inputs.Interact)
-                        {
-							Ray r = new Ray(_interactorSource.position, _interactorSource.forward);
-							if (Physics.Raycast(r, out RaycastHit hitinfo, _interactRange))
-							{
-								if (hitinfo.collider.gameObject.TryGetComponent(out IInteractable interactOBJ))
-								{
-                                    Debug.Log("AAAA");
-									interactOBJ.Interact();
-								}
-							}
-						}
+                       
                         // Jumping input
                         if (inputs.JumpDown)
                         {

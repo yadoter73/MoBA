@@ -3,24 +3,24 @@ using UnityEngine;
 using PrimeTween;
 public class Door : MonoBehaviour, IInteractable
 {
-	private Animator _anim;
 	private bool _isOpen = false;
-	private void Start()
-	{
-		_anim = GetComponent<Animator>();
-	}
-	public void Interact()
+	[SerializeField] private float _angle;
+	private float _startAngle;
+    private void Start()
+    {
+		_startAngle = transform.rotation.eulerAngles.y;
+    }
+    public void Interact()
 	{
 		if (!_isOpen)
 		{
-			Debug.Log("fff");
-			_anim.Play("DoorOpen");
-			Tween.Delay(1).OnComplete(() => _isOpen = true);
+			Vector3 targetRotation = new(0, _angle, 0);
+			Tween.EulerAngles(this.transform,startValue:transform.rotation.eulerAngles ,endValue: targetRotation,duration: 0.5f, ease: Ease.OutQuad).OnComplete(() => _isOpen = true);
 		}
 		else 
 		{
-			_anim.Play("DoorClose");
-			Tween.Delay(1).OnComplete(() => _isOpen = false);
+			Vector3 targetRotation = new(0, _startAngle, 0);
+			Tween.EulerAngles(this.transform, startValue: transform.rotation.eulerAngles, endValue: targetRotation, duration: 1f, ease: Ease.InOutBack).OnComplete(() => _isOpen = false);
 		}
 	}
 }
