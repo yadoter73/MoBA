@@ -14,6 +14,7 @@ namespace KinematicCharacterController.Examples
         public UnityEvent<Vector2EventArgs> OnPlayerMoveEvent { get; set; } = new();
         public UnityEvent<PressedStateEventArgs> OnPlayerCrouchEvent { get; set; } = new();
 		public UnityEvent<PressedStateEventArgs> OnPlayerJumpEvent { get; set; } = new();
+		public UnityEvent<PressedStateEventArgs> OnPlayerInteractEvent { get; set; } = new();
 		public void OnPlayerMove(InputAction.CallbackContext ctx)
         {
             Vector2 value = ctx.ReadValue<Vector2>();
@@ -29,6 +30,12 @@ namespace KinematicCharacterController.Examples
             PressedState pressedState = GetPressedState(ctx);
             OnPlayerJumpEvent?.Invoke(new PressedStateEventArgs(pressedState));
         }
+        public void OnInteract(InputAction.CallbackContext ctx)
+        {
+			PressedState pressedState = GetPressedState(ctx);
+			OnPlayerInteractEvent?.Invoke(new PressedStateEventArgs(pressedState));
+		}
+
         private PressedState GetPressedState(InputAction.CallbackContext ctx)
         {
             if (ctx.canceled) return PressedState.Canceled;

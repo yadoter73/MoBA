@@ -3,10 +3,15 @@ using System.Collections.Generic;
 using UnityEngine;
 using KinematicCharacterController;
 using System;
+using Zenject;
 
 namespace KinematicCharacterController.Examples
 {
-    public enum CharacterState
+	interface IInteractable
+	{
+		public void Interact();
+	}
+	public enum CharacterState
     {
         Default,
     }
@@ -25,6 +30,7 @@ namespace KinematicCharacterController.Examples
         public bool JumpDown;
         public bool CrouchDown;
         public bool CrouchUp;
+        public bool Interact;
     }
 
     public struct AICharacterInputs
@@ -44,7 +50,11 @@ namespace KinematicCharacterController.Examples
     {
         public KinematicCharacterMotor Motor;
 
-        [Header("Stable Movement")]
+        [Header("Interact")]
+		[Inject(Id = "PlayerTransform")] private Transform _interactorSource;
+		[SerializeField] private float _interactRange = 3f;
+
+		[Header("Stable Movement")]
         public float MaxStableMoveSpeed = 10f;
         public float StableMovementSharpness = 15f;
         public float OrientationSharpness = 10f;
@@ -180,7 +190,19 @@ namespace KinematicCharacterController.Examples
                                 _lookInputVector = _moveInputVector.normalized;
                                 break;
                         }
-
+                        // Interact input
+                        if (inputs.Interact)
+                        {
+							Ray r = new Ray(_interactorSource.position, _interactorSource.forward);
+							if (Physics.Raycast(r, out RaycastHit hitinfo, _interactRange))
+							{
+								if (hitinfo.collider.gameObject.TryGetComponent(out IInteractable interactOBJ))
+								{
+                                    Debug.Log("AAAA");
+									interactOBJ.Interact();
+								}
+							}
+						}
                         // Jumping input
                         if (inputs.JumpDown)
                         {

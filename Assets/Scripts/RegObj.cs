@@ -3,11 +3,12 @@ using Zenject;
 using UnityEngine.AI;
 using KinematicCharacterController.Examples;
 using DialogueEditor;
+using System.ComponentModel;
 public class RegObj : MonoInstaller
 {
     [SerializeField] private Transform _player;
     [SerializeField] private ExamplePlayer _examPlayer;
-    [SerializeField] private ExampleCharacterController _exampleCharacterController;
+	[SerializeField] private ExampleCharacterController _exampleCharacterController;
     [SerializeField] private NPCConversation _playerConversation;
     public override void InstallBindings()
     {
