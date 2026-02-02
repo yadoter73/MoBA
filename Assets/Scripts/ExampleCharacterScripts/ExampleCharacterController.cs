@@ -10,7 +10,7 @@ namespace KinematicCharacterController.Examples
 {
 	interface IInteractable
 	{
-		public void Interact();
+		public void Interact(int id);
 	}
 	public enum CharacterState
     {

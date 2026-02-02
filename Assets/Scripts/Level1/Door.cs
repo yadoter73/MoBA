@@ -9,13 +9,14 @@ public class Door : MonoBehaviour, IInteractable
     private void Start()
     {
 		_startAngle = transform.rotation.eulerAngles.y;
+		
     }
-    public void Interact()
+    public void Interact(int id)
 	{
 		if (!_isOpen)
 		{
 			Vector3 targetRotation = new(0, _angle, 0);
-			Tween.EulerAngles(this.transform,startValue:transform.rotation.eulerAngles ,endValue: targetRotation,duration: 0.5f, ease: Ease.OutQuad).OnComplete(() => _isOpen = true);
+			Tween.EulerAngles(this.transform,startValue:transform.rotation.eulerAngles ,endValue: targetRotation,duration: 0.3f, ease: Ease.InOutBack).OnComplete(() => _isOpen = true);
 		}
 		else 
 		{
