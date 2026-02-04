@@ -8,15 +8,17 @@ public class EnemyAI : MonoBehaviour
     public LayerMask whatIsGround;
     public Vector3 walkPoint;
 
-    [SerializeField] private float _walkPointRange;
+    [Inject(Id = "PlayerTransform")] private Transform _player;
+    
     [SerializeField] private float _sightRange;
+    [SerializeField] private float _attackRange;
     [SerializeField] private ArenaBounds _arenaBounds;
 
     private Animator _anim;
     private NavMeshAgent _agent;
 
     private bool walkPointSet;
-    private bool playerInSightRange;
+    private bool playerInSightRange, playerInAttackRange;
 
     private void Start()
     {
@@ -26,8 +28,11 @@ public class EnemyAI : MonoBehaviour
     private void FixedUpdate()
     {
         playerInSightRange = Physics.CheckSphere(transform.position, _sightRange);
+        playerInAttackRange = Physics.CheckSphere(transform.position, _attackRange);
 
-        if (!playerInSightRange) Patroling();
+        if (!playerInSightRange && !playerInAttackRange) Patroling();
+        if (playerInSightRange && !playerInAttackRange) Patroling();
+        if (playerInSightRange && playerInAttackRange) LookAtPlayer();
     }
 
     private void Patroling()
@@ -67,6 +72,11 @@ public class EnemyAI : MonoBehaviour
         }
 
         walkPointSet = false;
+    }
+    private void LookAtPlayer()
+    {
+        transform.LookAt(_player);
+
     }
     private void OnDrawGizmosSelected()
     {
