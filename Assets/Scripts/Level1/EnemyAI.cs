@@ -1,20 +1,20 @@
 using UnityEngine;
 using UnityEngine.AI;
-using UnityEngine.SceneManagement;
 using PrimeTween;
 using Zenject;
+using System.Collections;
 public class EnemyAI : MonoBehaviour
 {
-    private NavMeshAgent _agent;
-    [Inject(Id = "PlayerTransform")] private Transform _player;
-    public LayerMask whatIsPlayer;
-
+    public LayerMask whatIsGround;
     public Vector3 walkPoint;
 
     [SerializeField] private float _walkPointRange;
     [SerializeField] private float _sightRange;
     [SerializeField] private ArenaBounds _arenaBounds;
-    [SerializeField] private Animator _anim;
+
+    private Animator _anim;
+    private NavMeshAgent _agent;
+
     private bool walkPointSet;
     private bool playerInSightRange;
 
@@ -25,15 +25,13 @@ public class EnemyAI : MonoBehaviour
     }
     private void FixedUpdate()
     {
-        playerInSightRange = Physics.CheckSphere(transform.position, _sightRange, whatIsPlayer);
+        playerInSightRange = Physics.CheckSphere(transform.position, _sightRange);
 
         if (!playerInSightRange) Patroling();
-        if (playerInSightRange) ChasePlayer();
     }
 
     private void Patroling()
     {
-        _anim.SetBool("Walk", true);
         if (!walkPointSet) SearchWalkPoint();
 
         if (walkPointSet)
@@ -46,7 +44,6 @@ public class EnemyAI : MonoBehaviour
     }
     private void SearchWalkPoint()
     {
-        _anim.SetBool("Walk", true);
         int maxAttempts = 30;
 
         for (int i = 0; i < maxAttempts; i++)
@@ -70,13 +67,6 @@ public class EnemyAI : MonoBehaviour
         }
 
         walkPointSet = false;
-    }
-
-    private void ChasePlayer()
-    {
-        _anim.SetBool("Walk", true);
-        _agent.SetDestination(_player.position);
-
     }
     private void OnDrawGizmosSelected()
     {
