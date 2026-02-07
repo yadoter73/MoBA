@@ -12,7 +12,7 @@ public class EnemyAI : MonoBehaviour
     
     [SerializeField] private float _sightRange;
     [SerializeField] private float _attackRange;
-    [SerializeField] private ArenaBounds _arenaBounds;
+    [SerializeField] private float _walkPointRange;
 
     private Animator _anim;
     private NavMeshAgent _agent;
@@ -31,7 +31,7 @@ public class EnemyAI : MonoBehaviour
         playerInAttackRange = Physics.CheckSphere(transform.position, _attackRange);
 
         if (!playerInSightRange && !playerInAttackRange) Patroling();
-        if (playerInSightRange && !playerInAttackRange) Patroling();
+        if (playerInSightRange && !playerInAttackRange) Chasing();
         if (playerInSightRange && playerInAttackRange) LookAtPlayer();
     }
 
@@ -49,34 +49,22 @@ public class EnemyAI : MonoBehaviour
     }
     private void SearchWalkPoint()
     {
-        int maxAttempts = 30;
+        float randomZ = Random.Range(-_walkPointRange, _walkPointRange);
+        float randomX = Random.Range(-_walkPointRange, _walkPointRange);
 
-        for (int i = 0; i < maxAttempts; i++)
-        {
-            walkPoint = _arenaBounds.GetRandomPointInside();
+        walkPoint = new Vector3(transform.position.x + randomX, transform.position.y, transform.position.z + randomZ);
 
-            if (NavMesh.SamplePosition(walkPoint, out NavMeshHit hitnav, 2f, NavMesh.AllAreas))
-            {
-                NavMeshPath path = new NavMeshPath();
-
-                if (_agent.CalculatePath(hitnav.position, path))
-                {
-                    if (path.status == NavMeshPathStatus.PathComplete || path.status == NavMeshPathStatus.PathPartial)
-                    {
-                        walkPoint = hitnav.position;
-                        walkPointSet = true;
-                        return;
-                    }
-                }
-            }
-        }
-
-        walkPointSet = false;
+        if (Physics.Raycast(walkPoint, -transform.up, 2f, whatIsGround)) walkPointSet = true;
+        
     }
     private void LookAtPlayer()
     {
         transform.LookAt(_player);
 
+    }
+    private void Chasing()
+    {
+        _agent.SetDestination(_player.position);
     }
     private void OnDrawGizmosSelected()
     {

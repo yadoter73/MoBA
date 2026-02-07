@@ -76851,7 +76851,7 @@ MonoBehaviour:
   walkPoint: {x: 0, y: 0, z: 0}
   _sightRange: 30
   _attackRange: 4
-  _arenaBounds: {fileID: 1910361807}
+  _walkPointRange: 0
 --- !u!195 &1149583676
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -131982,8 +131982,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _bounds:
-    m_Center: {x: 74.465, y: -1.4, z: 16.0857}
-    m_Extent: {x: 148.22142, y: 17.702114, z: 149.2621}
+    m_Center: {x: 74.465, y: 11.4, z: 16.0857}
+    m_Extent: {x: 148.22142, y: 9.726725, z: 149.2621}
   _obstacleMask:
     serializedVersion: 2
     m_Bits: 0
