@@ -1,17 +1,22 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Zenject;
+using KinematicCharacterController.Examples;
 
 public class PauseManager : MonoBehaviour
 {
-    [SerializeField] private GameObject pauseMenuCanvas;
+    [Inject] private ExamplePlayer _examPlayer;
+    [SerializeField] private GameObject _pauseMenuCanvas;
     private bool isPaused = false;
-
-    void Update()
+    void Start()
     {
-        if (Input.GetKeyDown(KeyCode.Escape))
+        _examPlayer.OnPlayerPauseEvent.AddListener(OnPauseInput);
+    }
+    public void OnPauseInput(ExamplePlayer.PressedStateEventArgs args)
+    {
+        if (args.State == ExamplePlayer.PressedState.Started)
         {
             if (isPaused) Resume();
-
             else Pause();
         }
     }
@@ -20,7 +25,7 @@ public class PauseManager : MonoBehaviour
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
         Time.timeScale = 0f;
-        pauseMenuCanvas.SetActive(true);
+        _pauseMenuCanvas.SetActive(true);
         isPaused = true;
     }
 
@@ -29,7 +34,7 @@ public class PauseManager : MonoBehaviour
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
         Time.timeScale = 1f;
-        pauseMenuCanvas.SetActive(false);
+        _pauseMenuCanvas.SetActive(false);
         isPaused = false;
     }
 

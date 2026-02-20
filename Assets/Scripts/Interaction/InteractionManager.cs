@@ -11,7 +11,7 @@ public class InteractionManager : MonoBehaviour
 	[Inject(Id = "HeadTransform")] private Transform alax;
 
 	private RaycastHit _hitInfo;
-	private float _interactRange = 4f;
+	private float _interactRange = 5f;
 	private bool ray { get; set; }
 
 	public UnityEvent<bool> OnInteractebleEvent { get; private set; } = new();
