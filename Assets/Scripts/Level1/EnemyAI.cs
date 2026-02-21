@@ -3,32 +3,35 @@ using UnityEngine.AI;
 using PrimeTween;
 using Zenject;
 using System.Collections;
+using Cysharp.Threading.Tasks;
 public class EnemyAI : MonoBehaviour
 {
-    public LayerMask whatIsGround;
+    public LayerMask whatIsGround, whatIsPlayer;
     public Vector3 walkPoint;
 
     [Inject(Id = "PlayerTransform")] private Transform _player;
-    
+
     [SerializeField] private float _sightRange;
     [SerializeField] private float _attackRange;
     [SerializeField] private float _walkPointRange;
+	[SerializeField] private float _enemyRotation;
 
-    private Animator _anim;
+	[SerializeField] private ArenaBounds _arenaBounds;
+   
     private NavMeshAgent _agent;
+    private EnemyState _currentState;
 
     private bool walkPointSet;
     private bool playerInSightRange, playerInAttackRange;
 
     private void Start()
     {
-        _anim = GetComponentInChildren<Animator>();
         _agent = GetComponent<NavMeshAgent>();
     }
     private void FixedUpdate()
     {
-        playerInSightRange = Physics.CheckSphere(transform.position, _sightRange);
-        playerInAttackRange = Physics.CheckSphere(transform.position, _attackRange);
+        playerInSightRange = Physics.CheckSphere(transform.position, _sightRange, whatIsPlayer);
+        playerInAttackRange = Physics.CheckSphere(transform.position, _attackRange, whatIsPlayer);
 
         if (!playerInSightRange && !playerInAttackRange) Patroling();
         if (playerInSightRange && !playerInAttackRange) Chasing();
@@ -54,17 +57,24 @@ public class EnemyAI : MonoBehaviour
 
         walkPoint = new Vector3(transform.position.x + randomX, transform.position.y, transform.position.z + randomZ);
 
-        if (Physics.Raycast(walkPoint, -transform.up, 2f, whatIsGround)) walkPointSet = true;
-        
+        if (Physics.Raycast(_arenaBounds.GetRandomPointInside(), Vector3.down, out var hit, 100f, whatIsGround))
+        {
+            walkPointSet = true;
+        }
     }
     private void LookAtPlayer()
     {
-        transform.LookAt(_player);
-
+		Vector3 direction = (_player.position - transform.position).normalized;
+		Quaternion targetRotation = Quaternion.LookRotation(new Vector3(direction.x, 0, direction.z));
+        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, _enemyRotation * Time.deltaTime);
     }
     private void Chasing()
     {
         _agent.SetDestination(_player.position);
+    }
+    private async UniTask Waiting()
+    {
+
     }
     private void OnDrawGizmosSelected()
     {
