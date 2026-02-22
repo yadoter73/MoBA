@@ -3,6 +3,7 @@ using Zenject;
 using KinematicCharacterController.Examples;
 using UnityEngine.InputSystem;
 using UnityEngine.Events;
+using System;
 public class InteractionManager : MonoBehaviour
 {
 	[SerializeField] private LayerMask _layerMask;
@@ -22,10 +23,17 @@ public class InteractionManager : MonoBehaviour
 	}
     private void FixedUpdate()
     {
-		Ray r = new Ray(alax.position, alax.forward);
-		bool prevRay = ray;
-		ray = Physics.Raycast(r, out _hitInfo, _interactRange,_layerMask);
-		if (prevRay != ray) OnInteractebleEvent?.Invoke(ray);
+		try
+		{
+			Ray r = new Ray(alax.position, alax.forward);
+			RaycastHit prevHit = _hitInfo;
+			ray = Physics.Raycast(r, out _hitInfo, _interactRange, _layerMask);
+			if (prevHit.collider != _hitInfo.collider) OnInteractebleEvent?.Invoke(_hitInfo.collider != null);
+		}
+		catch (NullReferenceException)
+		{
+			return;
+		}
 		
 	}
     void TryToInteract(ExamplePlayer.PressedStateEventArgs state)

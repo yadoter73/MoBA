@@ -2,15 +2,16 @@ using UnityEngine;
 using PrimeTween;
 using System.Collections;
 using System.Collections.Generic;
-
+using Cysharp.Threading.Tasks;
+using System.Threading;
 public class PointerInmpulse : MonoBehaviour
 {
     [SerializeField] private GameObject[] _pointers;
     private float viewAngle = 80f;
     private float viewDistance = 100f;
 
-    private Dictionary<Transform, Coroutine> _runningCoroutines = new();
-    private void FixedUpdate()
+    private Dictionary<Transform, CancellationTokenSource> _tasks = new();
+	private void FixedUpdate()
     {
         float angleThreshold = Mathf.Cos(viewAngle * 0.5f * Mathf.Deg2Rad);
         Vector3 origin = transform.position;
@@ -25,18 +26,21 @@ public class PointerInmpulse : MonoBehaviour
             if (isVisible)
             {
                 obj.SetActive(true);
-                if (!_runningCoroutines.ContainsKey(pointer))
+                if (!_tasks.ContainsKey(pointer))
                 {
-                    _runningCoroutines[pointer] = StartCoroutine(PointersMoving(pointer));
+                    var cts = new CancellationTokenSource();
+                    _tasks[pointer] = cts;
+                    PointersMoving(pointer, cts.Token).Forget();
                 }
             }
             else
             {
                 obj.SetActive(false);
-                if (_runningCoroutines.TryGetValue(pointer, out Coroutine running))
+                if (_tasks.TryGetValue(pointer, out var cts))
                 {
-                    StopCoroutine(running);
-                    _runningCoroutines.Remove(pointer);
+                    cts.Cancel();
+                    cts.Dispose();
+                    _tasks.Remove(pointer);
                 }
             }
 
@@ -55,18 +59,22 @@ public class PointerInmpulse : MonoBehaviour
 
         return dot > threshold;
     }
-    IEnumerator PointersMoving(Transform pointer)
+    private async UniTask PointersMoving(Transform pointer, CancellationToken token)
     {
         Vector3 startPos = pointer.position;
         float upPos = startPos.y + 4f;
         float downPos = startPos.y;
-        while (true)
+        try
         {
-
-            yield return Tween.LocalPositionY(pointer, upPos, 1f, Ease.InOutBack);
-            yield return null;
-            yield return Tween.LocalPositionY(pointer, downPos, 1f, Ease.InOutBack);
+            while (true)
+            {
+                await Tween.LocalPositionY(pointer, upPos, 1f, Ease.InOutBack).ToUniTask(cancellationToken: token);
+                await UniTask.Delay(700, cancellationToken: token);
+                await Tween.LocalPositionY(pointer, downPos, 1f, Ease.InOutBack).ToUniTask(cancellationToken: token);
+                await UniTask.Yield(token);
+            }
         }
+        catch (System.OperationCanceledException) { }   
     }
 }
 
