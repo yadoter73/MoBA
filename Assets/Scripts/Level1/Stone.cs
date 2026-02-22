@@ -6,5 +6,6 @@ public class Stone : MonoBehaviour, IInteractable
     public void Interact(int id)
     {
         gameObject.transform.SetParent(_targetParent.transform, false);
+        gameObject.transform.position = Vector3.zero;
     }    
 }
