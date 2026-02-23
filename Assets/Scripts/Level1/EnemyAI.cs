@@ -27,6 +27,7 @@ public class EnemyAI : MonoBehaviour
     private void Start()
     {
         _agent = GetComponent<NavMeshAgent>();
+        _currentState = new PatrolState(this);
     }
     private void FixedUpdate()
     {
