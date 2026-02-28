@@ -1,9 +1,10 @@
-using UnityEngine;
-using Zenject;
 using KinematicCharacterController.Examples;
-using UnityEngine.InputSystem;
-using UnityEngine.Events;
 using System;
+using UnityEditor.PackageManager;
+using UnityEngine;
+using UnityEngine.Events;
+using UnityEngine.InputSystem;
+using Zenject;
 public class InteractionManager : MonoBehaviour
 {
 	[SerializeField] private LayerMask _layerMask;
@@ -18,26 +19,30 @@ public class InteractionManager : MonoBehaviour
 	public UnityEvent<bool> OnInteractebleEvent { get; private set; } = new();
 
 	private void Start()
-    {
+	{
 		_examPlayer.OnPlayerInteractEvent.AddListener(TryToInteract);
 	}
-    private void FixedUpdate()
-    {
+	private void FixedUpdate()
+	{
 		try
 		{
 			Ray r = new Ray(alax.position, alax.forward);
 			RaycastHit prevHit = _hitInfo;
 			ray = Physics.Raycast(r, out _hitInfo, _interactRange, _layerMask);
-			if (prevHit.collider != _hitInfo.collider) OnInteractebleEvent?.Invoke(_hitInfo.collider != null);
+			
+			if (prevHit.collider != _hitInfo.collider)
+			{
+				OnInteractebleEvent?.Invoke(_hitInfo.collider == null);
+			}
 		}
 		catch (NullReferenceException)
 		{
 			return;
 		}
-		
+
 	}
-    void TryToInteract(ExamplePlayer.PressedStateEventArgs state)
-    {
+	void TryToInteract(ExamplePlayer.PressedStateEventArgs state)
+	{
 		if (state.State != ExamplePlayer.PressedState.Started) return;
 
 		if (ray == true && _hitInfo.collider.gameObject.TryGetComponent(out IInteractable interactOBJ))

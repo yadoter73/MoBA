@@ -29,7 +29,7 @@ public class PatrolState : EnemyState
         {
             float distance = Vector3.Distance(_enemy.transform.position, walkPoint);
 
-            if (distance < 1f) { walkPointSet = false; }
+            if (distance < 2f) { walkPointSet = false; }
         }
     }
     private void Stop()
@@ -43,11 +43,14 @@ public class PatrolState : EnemyState
         {
             while (!token.IsCancellationRequested)
             {
-                _enemy.FindPoint();
-                walkPointSet = true;
+                Vector3 point = _enemy.FindPoint();
+                walkPoint = point;
+				walkPointSet = true;
+				_enemy.MoveTo(walkPoint);
+                
 
                 await UniTask.WaitUntil(() => walkPointSet == false);
-                await UniTask.WaitForSeconds(5);
+                await UniTask.WaitForSeconds(3);
             }
         }
         catch (System.OperationCanceledException) { }
