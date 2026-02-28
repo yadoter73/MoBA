@@ -1,16 +1,20 @@
 using UnityEngine;
-
-public class ChaseState : MonoBehaviour
+using Zenject;
+public class ChaseState : EnemyState
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    public ChaseState(EnemyAI enemy, ArenaBounds arenaBounds, LayerMask whatIsGround) : base(enemy, arenaBounds, whatIsGround) { }
+    public override void UpdateState()
     {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
+        if (_enemy.playerInAttackRange)
+        {
+            _enemy.SwitchState(new LookingState(_enemy, _arenaBounds, _whatIsGround));   
+            return;
+        }
+        if (!_enemy.playerInSightRange)
+        {
+            _enemy.SwitchState(new PatrolState(_enemy, _arenaBounds, _whatIsGround));
+            return;
+        }
+        _enemy.MoveTo(_enemy.player.position);
     }
 }

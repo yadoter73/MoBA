@@ -54,7 +54,7 @@ public class RegObj : MonoInstaller
         Container.
             Bind<ArenaBounds>().
             FromInstance(_arenaBounds).
-            AsSingle();
+            AsSingle().NonLazy();
 
         Container.
             Bind<ExampleCharacterController>().

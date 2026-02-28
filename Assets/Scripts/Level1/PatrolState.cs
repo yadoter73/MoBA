@@ -1,3 +1,5 @@
+using Cysharp.Threading.Tasks;
+using System.Threading;
 using UnityEngine;
 using UnityEngine.AI;
 using Zenject;
@@ -6,33 +8,49 @@ public class PatrolState : EnemyState
 {
     private bool walkPointSet;
 
-    private float _walkPointRange = 20f;
-
     private Vector3 walkPoint;
 
-    [Inject(Id = "Agent")] private NavMeshAgent _agent;
-    [Inject(Id = "Layer")] private LayerMask whatIsGround;
+    private CancellationTokenSource _cts;
 
-    [Inject] private ArenaBounds _arenaBounds;
-
-    public PatrolState(EnemyAI enemy) : base(enemy)
-    {
-        Patrolling();
+    public PatrolState(EnemyAI enemy, ArenaBounds arenaBounds, LayerMask whatIsGround) : base(enemy, arenaBounds, whatIsGround)
+    { 
+        _cts = new CancellationTokenSource();
+        StartPatrol(_cts.Token).Forget(); 
     }
     public override void UpdateState()
     {
-
-    }
-    private void Patrolling()
-    {
-        float randomZ = Random.Range(-_walkPointRange, _walkPointRange);
-        float randomX = Random.Range(-_walkPointRange, _walkPointRange);
-
-        walkPoint = new Vector3(_agent.transform.position.x + randomX, _agent.transform.position.y, _agent.transform.position.z + randomZ);
-
-        if (Physics.Raycast(_arenaBounds.GetRandomPointInside(), Vector3.down, out var hit, 100f, whatIsGround))
+        if (_enemy.playerInSightRange)
         {
-            walkPointSet = true;
+            Stop();
+            _enemy.SwitchState(new ChaseState(_enemy, _arenaBounds, _whatIsGround));
+            return;
+        }
+        if (walkPointSet)
+        {
+            float distance = Vector3.Distance(_enemy.transform.position, walkPoint);
+
+            if (distance < 1f) { walkPointSet = false; }
         }
     }
+    private void Stop()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+    }
+    private async UniTask StartPatrol(CancellationToken token)
+    {
+        try
+        {
+            while (!token.IsCancellationRequested)
+            {
+                _enemy.FindPoint();
+                walkPointSet = true;
+
+                await UniTask.WaitUntil(() => walkPointSet == false);
+                await UniTask.WaitForSeconds(5);
+            }
+        }
+        catch (System.OperationCanceledException) { }
+    }
+        
 }
