@@ -30,9 +30,9 @@ public class InteractionManager : MonoBehaviour
 			RaycastHit prevHit = _hitInfo;
 			ray = Physics.Raycast(r, out _hitInfo, _interactRange, _layerMask);
 			
-			if (prevHit.collider != _hitInfo.collider)
+			if (_hitInfo.collider != prevHit.collider)
 			{
-				OnInteractebleEvent?.Invoke(_hitInfo.collider == null);
+				OnInteractebleEvent?.Invoke(_hitInfo.collider != null);
 			}
 		}
 		catch (NullReferenceException)

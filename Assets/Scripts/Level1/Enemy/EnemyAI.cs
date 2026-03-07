@@ -21,7 +21,7 @@ public class EnemyAI : MonoBehaviour
     private NavMeshAgent _agent;
     private EnemyState _currentState;
 
-    public bool playerInSightRange, playerInAttackRange;
+    public bool playerInSightRange, playerInAttackRange, playerWaitingToLeave;
 
     private void Start()
     {
