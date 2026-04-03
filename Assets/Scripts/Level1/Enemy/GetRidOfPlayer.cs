@@ -4,7 +4,7 @@ public class GetRidOfPlayer : EnemyState
 {
 	private bool _isWaiting = false;
 	private Vector3 point;
-	public GetRidOfPlayer(EnemyAI enemy, ArenaBounds arenaBounds, LayerMask whatIsGround) : base(enemy, arenaBounds, whatIsGround) 
+	public GetRidOfPlayer(EnemyAI enemy, ArenaBounds arenaBounds, LayerMask whatIsGround, Animator animator) : base(enemy, arenaBounds, whatIsGround, animator) 
 	{
 		point = _enemy.FindPoint();
 		_enemy.playerWaitingToLeave = false;
@@ -19,7 +19,7 @@ public class GetRidOfPlayer : EnemyState
 			_isWaiting = true;
 			Tween.Delay(4).OnComplete(() =>
 			{ 
-				_enemy.SwitchState(new PatrolState(_enemy, _arenaBounds, _whatIsGround));
+				_enemy.SwitchState(new PatrolState(_enemy, _arenaBounds, _whatIsGround,_anim));
 				_enemy.playerWaitingToLeave = false;
 			});
 

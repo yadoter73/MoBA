@@ -7,17 +7,22 @@ public class LookingState : EnemyState
 	private float enemyRotation = 5f;
 	private bool _isTransitioning = false;
 	private Tween _delayTween;
-	public LookingState(EnemyAI enemy, ArenaBounds arenaBounds, LayerMask whatIsGround) : base(enemy, arenaBounds, whatIsGround) { }
+	public LookingState(EnemyAI enemy, ArenaBounds arenaBounds, LayerMask whatIsGround, Animator animator) : base(enemy, arenaBounds, whatIsGround, animator) { }
 	public override void UpdateState()
 	{
 		if (!_enemy.playerInAttackRange)
 		{
 			_delayTween.Stop();
-			_enemy.SwitchState(new ChaseState(_enemy, _arenaBounds, _whatIsGround));
+			_enemy.SwitchState(new ChaseState(_enemy, _arenaBounds, _whatIsGround, _anim));
 			return;
 		}
+		float distance = Vector3.Distance(_enemy.transform.position, _enemy.player.transform.position);
+		if (distance >= 5)
+        {
+			_enemy.MoveTo(_enemy.transform.position);
+		}
 
-		_enemy.MoveTo(_enemy.transform.position);
+		_anim.SetBool("isMoving", false);
 		Vector3 direction = (_enemy.player.position - _enemy.transform.position).normalized;
 		Quaternion targetRotation = Quaternion.LookRotation(new Vector3(direction.x, 0, direction.z));
 		_enemy.transform.rotation = Quaternion.Slerp(_enemy.transform.rotation, targetRotation, enemyRotation * Time.deltaTime);
@@ -28,7 +33,7 @@ public class LookingState : EnemyState
 			_delayTween = Tween.Delay(3).OnComplete(() =>
 			{
 				_enemy.playerWaitingToLeave = true;
-				_enemy.SwitchState(new GetRidOfPlayer(_enemy, _arenaBounds, _whatIsGround));
+				_enemy.SwitchState(new GetRidOfPlayer(_enemy, _arenaBounds, _whatIsGround,_anim));
 			});
 		}
 

@@ -8,19 +8,26 @@ public class RegObj : MonoInstaller
 {
     [SerializeField] private Transform _player;
     [SerializeField] private ExamplePlayer _examPlayer;
-	[SerializeField] private ExampleCharacterController _exampleCharacterController;
+    [SerializeField] private ExampleCharacterController _exampleCharacterController;
     [SerializeField] private NPCConversation _playerConversation;
     [SerializeField] private Transform _playerHead;
     [SerializeField] private InteractionManager _interManager;
     [SerializeField] private NavMeshAgent _agent;
     [SerializeField] private LayerMask WhatIsGround;
     [SerializeField] private ArenaBounds _arenaBounds;
+    [SerializeField] private Animator _enemyAnim;
     public override void InstallBindings()
     {
         Container.
             Bind<NPCConversation>().
             WithId("NpcConversation").
             FromInstance(_playerConversation).
+            AsCached();
+
+        Container.
+            Bind<Animator>().
+            WithId("EnemyAnimator").
+            FromInstance(_enemyAnim).
             AsCached();
 
         Container.

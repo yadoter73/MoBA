@@ -12,6 +12,7 @@ public class EnemyAI : MonoBehaviour
 
     [Inject(Id = "PlayerTransform")] public Transform player { get; private set; }
     [Inject(Id = "Layer")] private LayerMask _whatIsGround;
+    [Inject(Id = "EnemyAnimator")] private Animator _anim;
 
     [SerializeField] private float _sightRange;
     [SerializeField] private float _attackRange;
@@ -26,7 +27,7 @@ public class EnemyAI : MonoBehaviour
     private void Start()
     {
         _agent = GetComponent<NavMeshAgent>();
-        _currentState = new PatrolState(this, _arenaBounds, _whatIsGround);
+        _currentState = new PatrolState(this, _arenaBounds, _whatIsGround,_anim);
     }
     private void FixedUpdate()
     {
@@ -40,6 +41,7 @@ public class EnemyAI : MonoBehaviour
     }
     public void MoveTo(Vector3 destination)
     {
+        _anim.SetBool("isMoving", true);
         _agent.SetDestination(destination);
     }
     public Vector3 FindPoint()
