@@ -6,5 +6,6 @@ public class TextRenaming : MonoBehaviour
     private void Start()
     {
         Tween.Delay(5).OnComplete(() => _text.SetActive(true));
+        Tween.Delay(15).OnComplete(() => _text.SetActive(false));
     }
 }

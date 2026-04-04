@@ -1,11 +1,13 @@
 using UnityEngine;
 using KinematicCharacterController.Examples;
+using UnityEngine.Playables;
+using PrimeTween;
 public class Stone : MonoBehaviour, IInteractable
 {
-    [SerializeField] private GameObject _targetParent;
+    [SerializeField] private PlayableDirector _cutscene;
+
     public void Interact(int id)
     {
-        gameObject.transform.SetParent(_targetParent.transform, false);
-        gameObject.transform.position = Vector3.zero;
+       Tween.Delay(1.5f).OnComplete(() => _cutscene.Play());
     }    
 }

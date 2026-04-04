@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Zenject;
 using KinematicCharacterController.Examples;
+using PrimeTween;
 
 public class PauseManager : MonoBehaviour
 {
@@ -24,24 +25,28 @@ public class PauseManager : MonoBehaviour
     {
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
-        Time.timeScale = 0f;
         _pauseMenuCanvas.SetActive(true);
         isPaused = true;
+        Time.timeScale = 0f;
     }
 
     public void Resume()
     {
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
-        Time.timeScale = 1f;
         _pauseMenuCanvas.SetActive(false);
         isPaused = false;
+        Time.timeScale = 1f;
     }
 
     public void Play(string level)
     {
-        SceneManager.LoadScene(level);
-    }
+		Time.timeScale = 1f;
+		_pauseMenuCanvas.SetActive(false);
+		isPaused = false;
+		Cursor.lockState = CursorLockMode.Locked;
+		Cursor.visible = false;
+	}
 
     public void Exit()
     {
