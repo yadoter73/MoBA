@@ -16,7 +16,7 @@ public class Door : MonoBehaviour, IInteractable
 		if (!_isOpen)
 		{
 			Vector3 targetRotation = new(0, _angle, 0);
-			Tween.Rotation(this.transform,startValue:transform.rotation.eulerAngles ,endValue: targetRotation,duration: 0.5f, ease: Ease.InOutBack).OnComplete(() => _isOpen = true);
+			Tween.Rotation(this.transform,startValue:transform.rotation.eulerAngles ,endValue: targetRotation,duration: 0.67f, ease: Ease.InOutBack).OnComplete(() => _isOpen = true);
 		}
 		else 
 		{

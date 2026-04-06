@@ -14,7 +14,8 @@ public class CupBoard : MonoBehaviour
 	{
 		if (!_isOpen)
 		{
-			Tween.Position(this.transform, endValue: _vector3End, duration: 0.5f, ease: Ease.InOutBack)
+			Debug.Log("f");
+			Tween.Position(this.transform, endValue: _vector3End, duration: 0.7f, ease: Ease.InOutBack)
 				.OnComplete(() => _isOpen = true);
 		}
 		else
