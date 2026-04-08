@@ -47,7 +47,7 @@ public class InteractionManager : MonoBehaviour
 
 		if (ray == true && _hitInfo.collider.gameObject.TryGetComponent(out IInteractable interactOBJ))
 		{
-			interactOBJ.Interact(-1);
+			interactOBJ.Interact(0);
 		}
 	}
 }
