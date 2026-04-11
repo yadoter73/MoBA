@@ -3,10 +3,12 @@ using KinematicCharacterController.Examples;
 using UnityEngine.Playables;
 using PrimeTween;
 using Zenject;
+using Cysharp.Threading.Tasks;
 public class Stone : MonoBehaviour, IInteractable
 {
     [SerializeField] private PlayableDirector _cutscene;
     [SerializeField] private GameObject _saya;
+    [SerializeField] private LineToSaya _lineToSaya;
 
     [Inject(Id = "TextScript")] private TextRenaming _textRen;
 
@@ -27,5 +29,7 @@ public class Stone : MonoBehaviour, IInteractable
         _saya.transform.position = new Vector3(-53, 8, 25);
         _saya.transform.rotation = Quaternion.Euler(0, 270, 0);
         _textRen.SayaText();
+        
+        _lineToSaya.ActivateMarker(1f).Forget();
     }
 }
