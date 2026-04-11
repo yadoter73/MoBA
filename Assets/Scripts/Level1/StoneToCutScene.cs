@@ -8,11 +8,11 @@ public class Stone : MonoBehaviour, IInteractable
     [SerializeField] private PlayableDirector _cutscene;
     [SerializeField] private GameObject _saya;
 
-    [Inject(Id = "PlayerTransform")] private Transform _player;
+    [Inject(Id = "TextScript")] private TextRenaming _textRen;
 
     public void Interact(int id)
     {
-       Tween.Delay(1).OnComplete(() => _cutscene.Play());
+        Tween.Delay(1).OnComplete(() => _cutscene.Play());
     }
     void OnEnable()
     {
@@ -26,5 +26,6 @@ public class Stone : MonoBehaviour, IInteractable
     {
         _saya.transform.position = new Vector3(-53, 8, 25);
         _saya.transform.rotation = Quaternion.Euler(0, 270, 0);
+        _textRen.SayaText();
     }
 }

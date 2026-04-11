@@ -16,8 +16,14 @@ public class RegObj : MonoInstaller
     [SerializeField] private LayerMask WhatIsGround;
     [SerializeField] private ArenaBounds _arenaBounds;
     [SerializeField] private Animator _enemyAnim;
+    [SerializeField] private TextRenaming _textRename;
     public override void InstallBindings()
     {
+        Container.
+            Bind<TextRenaming>().
+            WithId("TextScript").
+            FromInstance(_textRename).
+            AsCached();
         Container.
             Bind<NPCConversation>().
             WithId("NpcConversation").

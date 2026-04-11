@@ -8,11 +8,19 @@ public class TextRenaming : MonoBehaviour
     {
         _text.alpha = 0f;
         _text.transform.gameObject.SetActive(true);
+        TextAlpha();
 
+    }
+    public void SayaText()
+    {
+        _text.text = "Talk to Saya";
+        TextAlpha();
+    }
+    private void TextAlpha()
+    {
         Sequence.Create()
-            .ChainDelay(5f) 
-            .Chain(Tween.Alpha(_text, endValue: 1f,duration: 2f,cycles: 5,cycleMode: CycleMode.Restart, ease: Ease.OutQuad))
+            .ChainDelay(6f) 
+            .Chain(Tween.Alpha(_text, endValue: 1f,duration: 2f,cycles: 6,cycleMode: CycleMode.Yoyo, ease: Ease.InOutQuad))
             .ChainCallback(() => _text.gameObject.SetActive(false));
-
     }
 }
