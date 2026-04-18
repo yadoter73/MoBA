@@ -8,6 +8,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 3890311930985027152, guid: c53aba305f1ce9642a81b759eb42adfb, type: 3}
+      propertyPath: _spawnPoint
+      value: 
+      objectReference: {fileID: 1357656429008946034}
     - target: {fileID: 6854190122043147980, guid: c53aba305f1ce9642a81b759eb42adfb, type: 3}
       propertyPath: m_Name
       value: Agent (2) Variant
@@ -61,3 +65,8 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c53aba305f1ce9642a81b759eb42adfb, type: 3}
+--- !u!4 &1357656429008946034 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8400107301515815532, guid: c53aba305f1ce9642a81b759eb42adfb, type: 3}
+  m_PrefabInstance: {fileID: 7369138318989682974}
+  m_PrefabAsset: {fileID: 0}

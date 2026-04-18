@@ -1,16 +1,16 @@
+using DialogueEditor;
 using UnityEngine;
+using Zenject;
 
-public class EnemyInstaller : MonoBehaviour
+public class EnemyInstaller : MonoInstaller
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
+	[SerializeField] private Animator _enemyAnim;
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+	public override void InstallBindings()
+	{
+		Container.Bind<Animator>().
+			WithId("EnemyAnim").
+			FromInstance(_enemyAnim).
+			AsCached();
+	}
 }

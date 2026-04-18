@@ -7,10 +7,12 @@ using UnityEngine.Playables;
 public class HospitalAwake : MonoBehaviour
 {
     private Image _image;
+
 	[SerializeField] Image _imageB;
 	[SerializeField] private NPCConversation _playerConversation;
 	[SerializeField] private PlayableDirector _cutscene;
 	[SerializeField] private GameObject _conversation;
+
 	private float duration = 1f;
 	private void Start()
 	{	

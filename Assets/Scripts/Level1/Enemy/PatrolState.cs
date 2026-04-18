@@ -28,9 +28,13 @@ public class PatrolState : EnemyState
         }
         if (walkPointSet)
         {
-            float distance = Vector3.Distance(_enemy.transform.position, walkPoint);
+			Vector3 enemyPos = _enemy.transform.position;
+			Vector3 targetPos = walkPoint;
+			float dx = enemyPos.x - targetPos.x;
+			float dz = enemyPos.z - targetPos.z;
+			float distanceXZ = Mathf.Sqrt(dx * dx + dz * dz);
 
-            if (distance < 2f) 
+			if (distanceXZ < 2f) 
             {
                 walkPointSet = false; 
                 _anim.SetBool("isMoving", false);
