@@ -12,7 +12,7 @@ public class LineToSaya : MonoBehaviour
 
 	private Tween _fadeTween;
 
-	private float _offsetToGround = 0.2f;
+	private float _offsetToGround = 2f;
 	private float _distanceToplayer = 2f;
 	private float _deactivateDistance = 5f;
 
