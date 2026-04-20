@@ -12,7 +12,7 @@ public class EnemyAI : MonoBehaviour
 
 	[Inject(Id = "PlayerTransform")] public Transform player { get; private set; }
 	[Inject(Id = "Layer")] private LayerMask _whatIsGround;
-	[Inject(Id = "EnemyAnimator")] private Animator _anim;
+	[Inject(Id = "EnemyAnim")] private Animator _anim;
 
 	[SerializeField] private float _sightRange;
 	[SerializeField] private float _attackRange;
@@ -46,8 +46,8 @@ public class EnemyAI : MonoBehaviour
 	}
 	public Vector3 FindPoint()
 	{
-		float randomX = Random.Range(20, 67);
-		float randomZ = Random.Range(20, 67);
+		float randomX = Random.Range(31, 67);
+		float randomZ = Random.Range(31, 67);
 
 		Vector3 randomPoint = new Vector3(transform.position.x + randomX, transform.position.y , transform.position.z + randomZ);
 		NavMeshHit hit;
