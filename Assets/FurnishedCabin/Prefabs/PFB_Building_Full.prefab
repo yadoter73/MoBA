@@ -850,6 +850,7 @@ GameObject:
   - component: {fileID: 33000012595297470}
   - component: {fileID: 23000012143570470}
   - component: {fileID: 64000014051184464}
+  - component: {fileID: 1140000199990107}
   m_Layer: 9
   m_Name: draw07
   m_TagString: Untagged
@@ -1973,6 +1974,7 @@ GameObject:
   - component: {fileID: 33000012596811598}
   - component: {fileID: 23000012840362872}
   - component: {fileID: 64000013191299976}
+  - component: {fileID: 1140000199990104}
   m_Layer: 9
   m_Name: draw04
   m_TagString: Untagged
@@ -2232,6 +2234,7 @@ GameObject:
   - component: {fileID: 33000013743658418}
   - component: {fileID: 23000012258710892}
   - component: {fileID: 64000012508946568}
+  - component: {fileID: 1140000199990001}
   m_Layer: 0
   m_Name: PFB_FreestandMirror
   m_TagString: Untagged
@@ -2333,6 +2336,22 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 4300000, guid: 1ecdaf6793a1141fbbd1607673362cbf, type: 3}
+--- !u!114 &1140000199990001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000010861187250}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e58b9c6bf93de4c0b10f3005890123de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MirrorReflection
+  _mirrorMaterial: {fileID: 2100000, guid: d47a8b5af82cd3bfa0fe2ff4789012cd, type: 2}
+  _textureSize: 512
+  _maxRenderDistance: 28
+  _clipPlaneOffset: -0.02
 --- !u!1 &1000010880072308
 GameObject:
   m_ObjectHideFlags: 0
@@ -2345,6 +2364,7 @@ GameObject:
   - component: {fileID: 33000013489366630}
   - component: {fileID: 23000013018316678}
   - component: {fileID: 64000011009775742}
+  - component: {fileID: 1140000199990105}
   m_Layer: 9
   m_Name: draw05
   m_TagString: Untagged
@@ -5133,6 +5153,7 @@ GameObject:
   - component: {fileID: 33000012598168090}
   - component: {fileID: 23000012408075782}
   - component: {fileID: 64000013058573886}
+  - component: {fileID: 1140000199990102}
   m_Layer: 9
   m_Name: draw02
   m_TagString: Untagged
@@ -5394,8 +5415,11 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b3e7c48735903594cb45e827fbbc6249, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
-  _vector3End: {x: -0.08916855, y: 0.01719129, z: 0.356}
+  m_EditorClassIdentifier: Assembly-CSharp::CupBoard
+  _openOffset: {x: 0, y: 0, z: 0.32}
+  _openDuration: 0.55
+  _closeDuration: 0.65
+  _vector3End: {x: 0, y: 0, z: 0}
 --- !u!1 &1000011913007176
 GameObject:
   m_ObjectHideFlags: 0
@@ -5408,6 +5432,7 @@ GameObject:
   - component: {fileID: 33000011186583496}
   - component: {fileID: 23000013821243508}
   - component: {fileID: 64000010072490900}
+  - component: {fileID: 1140000199990106}
   m_Layer: 9
   m_Name: draw06
   m_TagString: Untagged
@@ -5754,6 +5779,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4000012327354256}
   - component: {fileID: 64000010595759298}
+  - component: {fileID: 1140000199990301}
   m_Layer: 0
   m_Name: PFB_Shower
   m_TagString: Untagged
@@ -7081,6 +7107,7 @@ GameObject:
   - component: {fileID: 33000011359742384}
   - component: {fileID: 23000010868988648}
   - component: {fileID: 64000013389670700}
+  - component: {fileID: 1140000199990103}
   m_Layer: 9
   m_Name: draw03
   m_TagString: Untagged
@@ -8067,7 +8094,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 4294967295
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &4000011231587150
 Transform:
@@ -9266,6 +9293,7 @@ GameObject:
   - component: {fileID: 65000011972146648}
   - component: {fileID: 95000013331181696}
   - component: {fileID: 64000013736877972}
+  - component: {fileID: 1140000199990201}
   m_Layer: 8
   m_Name: PFB_BathroomSink
   m_TagString: Untagged
@@ -11711,3 +11739,139 @@ Transform:
   - {fileID: 4000013068314294}
   m_Father: {fileID: 451208}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1140000199990102
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000011742534392}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b3e7c48735903594cb45e827fbbc6249, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CupBoard
+  _openOffset: {x: 0, y: 0, z: 0.32}
+  _openDuration: 0.55
+  _closeDuration: 0.65
+  _vector3End: {x: 0, y: 0, z: 0}
+--- !u!114 &1140000199990103
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000012522557728}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b3e7c48735903594cb45e827fbbc6249, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CupBoard
+  _openOffset: {x: 0, y: 0, z: 0.32}
+  _openDuration: 0.55
+  _closeDuration: 0.65
+  _vector3End: {x: 0, y: 0, z: 0}
+--- !u!114 &1140000199990104
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000010766857948}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b3e7c48735903594cb45e827fbbc6249, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CupBoard
+  _openOffset: {x: 0, y: 0, z: 0.32}
+  _openDuration: 0.55
+  _closeDuration: 0.65
+  _vector3End: {x: 0, y: 0, z: 0}
+--- !u!114 &1140000199990105
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000010880072308}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b3e7c48735903594cb45e827fbbc6249, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CupBoard
+  _openOffset: {x: 0, y: 0, z: 0.32}
+  _openDuration: 0.55
+  _closeDuration: 0.65
+  _vector3End: {x: 0, y: 0, z: 0}
+--- !u!114 &1140000199990106
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000011913007176}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b3e7c48735903594cb45e827fbbc6249, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CupBoard
+  _openOffset: {x: 0, y: 0, z: 0.32}
+  _openDuration: 0.55
+  _closeDuration: 0.65
+  _vector3End: {x: 0, y: 0, z: 0}
+--- !u!114 &1140000199990107
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000010407026792}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b3e7c48735903594cb45e827fbbc6249, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CupBoard
+  _openOffset: {x: 0, y: 0, z: 0.32}
+  _openDuration: 0.55
+  _closeDuration: 0.65
+  _vector3End: {x: 0, y: 0, z: 0}
+--- !u!114 &1140000199990201
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000013424359804}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e58b9c6bf93de4c0b10f3005890123de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MirrorReflection
+  _localBottomLeft: {x: 0.392, y: 1.2306, z: 0.7163}
+  _localTopLeft: {x: 0.392, y: 1.9306, z: 0.7163}
+  _localTopRight: {x: 0.392, y: 1.9306, z: -0.7337}
+  _localBottomRight: {x: 0.392, y: 1.2306, z: -0.7337}
+  _localNormal: {x: -1, y: 0, z: 0}
+  _glassOffset: 0.003
+  _mirrorMaterial: {fileID: 2100000, guid: d47a8b5af82cd3bfa0fe2ff4789012cd, type: 2}
+  _rtWidth: 768
+  _rtHeight: 384
+  _maxRenderDistance: 24
+  _clipPlaneOffset: -0.02
+--- !u!114 &1140000199990301
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000011981866200}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b8c9d0e1f2a34b4591cdef2345678901, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShowerDripEffect
+  _nozzleCenter: {x: -0.2526, y: 2.222, z: -0.4277}
+  _nozzleSizeXZ: {x: 0.32, y: 0.36}
+  _floorLocalY: 0.015
+  _dripRate: 7.5
+  _waterColor: {r: 0.72, g: 0.85, b: 0.9, a: 0.72}

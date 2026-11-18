@@ -1,9 +1,7 @@
 using KinematicCharacterController.Examples;
-using System;
-using UnityEditor.PackageManager;
+using MoBA.Player;
 using UnityEngine;
 using UnityEngine.Events;
-using UnityEngine.InputSystem;
 using Zenject;
 public class InteractionManager : MonoBehaviour
 {
@@ -11,6 +9,7 @@ public class InteractionManager : MonoBehaviour
 
 	[Inject] private ExamplePlayer _examPlayer;
 	[Inject(Id = "HeadTransform")] private Transform alax;
+	[Inject(Optional = true)] private IPlayerControlLock _playerControlLock;
 
 	private RaycastHit _hitInfo;
 	private float _interactRange = 5f;
@@ -20,32 +19,43 @@ public class InteractionManager : MonoBehaviour
 
 	private void Start()
 	{
+		if (_examPlayer == null)
+		{
+			Debug.LogError("[InteractionManager] Зависимость ExamplePlayer не внедрена.", this);
+			return;
+		}
 		_examPlayer.OnPlayerInteractEvent.AddListener(TryToInteract);
 	}
 	private void FixedUpdate()
 	{
-		try
+		if (alax == null) return;
+
+		if (_playerControlLock != null && _playerControlLock.IsLocked)
 		{
-			Ray r = new Ray(alax.position, alax.forward);
-			RaycastHit prevHit = _hitInfo;
-			ray = Physics.Raycast(r, out _hitInfo, _interactRange, _layerMask);
-			
-			if (_hitInfo.collider != prevHit.collider)
+			if (ray)
 			{
-				OnInteractebleEvent?.Invoke(_hitInfo.collider != null);
+				ray = false;
+				_hitInfo = default;
+				OnInteractebleEvent?.Invoke(false);
 			}
-		}
-		catch (NullReferenceException)
-		{
 			return;
 		}
 
+		Ray r = new Ray(alax.position, alax.forward);
+		RaycastHit prevHit = _hitInfo;
+		ray = Physics.Raycast(r, out _hitInfo, _interactRange, _layerMask);
+
+		if (_hitInfo.collider != prevHit.collider)
+		{
+			OnInteractebleEvent?.Invoke(_hitInfo.collider != null);
+		}
 	}
 	void TryToInteract(ExamplePlayer.PressedStateEventArgs state)
 	{
 		if (state.State != ExamplePlayer.PressedState.Started) return;
+		if (_playerControlLock != null && _playerControlLock.IsLocked) return;
 
-		if (ray == true && _hitInfo.collider.gameObject.TryGetComponent(out IInteractable interactOBJ))
+		if (ray && _hitInfo.collider != null && _hitInfo.collider.gameObject.TryGetComponent(out IInteractable interactOBJ))
 		{
 			interactOBJ.Interact(0);
 		}

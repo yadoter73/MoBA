@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 4000013954570872}
   - component: {fileID: 33000010159424926}
   - component: {fileID: 23000013756004066}
+  - component: {fileID: 1140000199990301}
   m_Layer: 0
   m_Name: tap
   m_TagString: Untagged
@@ -228,3 +229,20 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &1140000199990301
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000010163152706}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b8c9d0e1f2a34b4591cdef2345678901, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShowerDripEffect
+  _nozzleCenter: {x: -0.2526, y: 2.222, z: -0.4277}
+  _nozzleSizeXZ: {x: 0.32, y: 0.36}
+  _floorLocalY: 0.015
+  _dripRate: 7.5
+  _waterColor: {r: 0.72, g: 0.85, b: 0.9, a: 0.72}

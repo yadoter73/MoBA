@@ -20,6 +20,7 @@ public class InputMovementController
 	{
 		_playerCharacterInputs.JumpDown = pressedState.State == ExamplePlayer.PressedState.Started;
 		_exampleCharacterController.SetInputs(ref _playerCharacterInputs);
+		_playerCharacterInputs.JumpDown = false;
 	}
 	private void OnPlayerMove(ExamplePlayer.Vector2EventArgs vector2EventArgs)
 	{
@@ -32,5 +33,7 @@ public class InputMovementController
 		_playerCharacterInputs.CrouchDown = pressedState.State == ExamplePlayer.PressedState.Started;
 		_playerCharacterInputs.CrouchUp = pressedState.State == ExamplePlayer.PressedState.Canceled;
 		_exampleCharacterController.SetInputs(ref _playerCharacterInputs);
+		_playerCharacterInputs.CrouchDown = false;
+		_playerCharacterInputs.CrouchUp = false;
 	}
 }

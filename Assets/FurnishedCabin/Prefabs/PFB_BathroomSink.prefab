@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 33000012250347890}
   - component: {fileID: 23000011704716482}
   - component: {fileID: 64000010704572400}
+  - component: {fileID: 1140000199990201}
   m_Layer: 8
   m_Name: doorL
   m_TagString: Untagged
@@ -585,3 +586,26 @@ Transform:
   - {fileID: 4000013828812206}
   m_Father: {fileID: 4000010214412056}
   m_LocalEulerAnglesHint: {x: 0, y: -100, z: 0}
+--- !u!114 &1140000199990201
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000010235563978}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e58b9c6bf93de4c0b10f3005890123de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MirrorReflection
+  _localBottomLeft: {x: 0.392, y: 1.2306, z: 0.7163}
+  _localTopLeft: {x: 0.392, y: 1.9306, z: 0.7163}
+  _localTopRight: {x: 0.392, y: 1.9306, z: -0.7337}
+  _localBottomRight: {x: 0.392, y: 1.2306, z: -0.7337}
+  _localNormal: {x: -1, y: 0, z: 0}
+  _glassOffset: 0.003
+  _mirrorMaterial: {fileID: 2100000, guid: d47a8b5af82cd3bfa0fe2ff4789012cd, type: 2}
+  _rtWidth: 768
+  _rtHeight: 384
+  _maxRenderDistance: 24
+  _clipPlaneOffset: -0.02

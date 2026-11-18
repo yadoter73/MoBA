@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 33000013169855716}
   - component: {fileID: 23000014088772350}
   - component: {fileID: 64000012657670504}
+  - component: {fileID: 1140000199990001}
   m_Layer: 0
   m_Name: PFB_FreestandMirror
   m_TagString: Untagged
@@ -109,3 +110,19 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 4300000, guid: 1ecdaf6793a1141fbbd1607673362cbf, type: 3}
+--- !u!114 &1140000199990001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000011657164546}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e58b9c6bf93de4c0b10f3005890123de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MirrorReflection
+  _mirrorMaterial: {fileID: 2100000, guid: d47a8b5af82cd3bfa0fe2ff4789012cd, type: 2}
+  _textureSize: 512
+  _maxRenderDistance: 28
+  _clipPlaneOffset: -0.02

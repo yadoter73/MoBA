@@ -16,4 +16,6 @@ public abstract class EnemyState
 	}
 
 	public abstract void UpdateState();
+
+	public virtual void ExitState() { }
 }

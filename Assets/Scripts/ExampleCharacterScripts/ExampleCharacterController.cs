@@ -98,13 +98,48 @@ namespace KinematicCharacterController.Examples
         private Vector3 lastInnerNormal = Vector3.zero;
         private Vector3 lastOuterNormal = Vector3.zero;
 
+        private float _standingCapsuleRadius = 0.5f;
+        private float _standingCapsuleHeight = 7.2f;
+        private float _currentVisualHeight;
+
         private void Awake()
         {
+            if (Motor != null && Motor.Capsule != null)
+            {
+                _standingCapsuleRadius = Motor.Capsule.radius > 0f ? Motor.Capsule.radius : 0.5f;
+                _standingCapsuleHeight = Motor.Capsule.height > 0f ? Motor.Capsule.height : 7.2f;
+            }
+
+            _currentVisualHeight = StandingHeight;
+            if (MeshRoot != null)
+            {
+                Vector3 meshScale = MeshRoot.localScale;
+                MeshRoot.localScale = new Vector3(meshScale.x, StandingHeight, meshScale.z);
+            }
+
             // Handle initial state
             TransitionToState(CharacterState.Default);
 
             // Assign the characterController to the motor
             Motor.CharacterController = this;
+        }
+
+        private void Update()
+        {
+            if (MeshRoot == null) return;
+
+            float targetHeight = _isCrouching ? CrouchingHeight : StandingHeight;
+            if (Mathf.Abs(_currentVisualHeight - targetHeight) > 0.001f)
+            {
+                _currentVisualHeight = Mathf.Lerp(_currentVisualHeight, targetHeight, 1f - Mathf.Exp(-18f * Time.deltaTime));
+            }
+            else
+            {
+                _currentVisualHeight = targetHeight;
+            }
+
+            Vector3 meshScale = MeshRoot.localScale;
+            MeshRoot.localScale = new Vector3(meshScale.x, _currentVisualHeight, meshScale.z);
         }
 
         /// <summary>
@@ -208,8 +243,7 @@ namespace KinematicCharacterController.Examples
                             if (!_isCrouching)
                             {
                                 _isCrouching = true;
-                                Motor.SetCapsuleDimensions(0.5f, CrouchedCapsuleHeight, CrouchedCapsuleHeight * 0.5f);
-                                MeshRoot.localScale = new Vector3(1f, CrouchingHeight, 1f);
+                                Motor.SetCapsuleDimensions(_standingCapsuleRadius, CrouchedCapsuleHeight, CrouchedCapsuleHeight * 0.5f);
                             }
                         }
                         else if (inputs.CrouchUp)
@@ -449,7 +483,7 @@ namespace KinematicCharacterController.Examples
                         if (_isCrouching && !_shouldBeCrouching)
                         {
                             // Do an overlap test with the character's standing height to see if there are any obstructions
-                            Motor.SetCapsuleDimensions(0.5f, 2f, 1f);
+                            Motor.SetCapsuleDimensions(_standingCapsuleRadius, _standingCapsuleHeight, _standingCapsuleHeight * 0.5f);
                             if (Motor.CharacterOverlap(
                                 Motor.TransientPosition,
                                 Motor.TransientRotation,
@@ -458,12 +492,11 @@ namespace KinematicCharacterController.Examples
                                 QueryTriggerInteraction.Ignore) > 0)
                             {
                                 // If obstructions, just stick to crouching dimensions
-                                Motor.SetCapsuleDimensions(0.5f, CrouchedCapsuleHeight, CrouchedCapsuleHeight * 0.5f);
+                                Motor.SetCapsuleDimensions(_standingCapsuleRadius, CrouchedCapsuleHeight, CrouchedCapsuleHeight * 0.5f);
                             }
                             else
                             {
                                 // If no obstructions, uncrouch
-                                MeshRoot.localScale = new Vector3(1f, StandingHeight, 1f);
                                 _isCrouching = false;
                             }
                         }
