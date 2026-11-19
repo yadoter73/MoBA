@@ -516,9 +516,9 @@ namespace MoBA.Editor
                 Name = "...",
                 Text = "...",
                 TMPFont = font,
-                AdvanceDialogueAutomatically = false,
-                AutoAdvanceShouldDisplayOption = false,
-                TimeUntilAdvance = 0f,
+                AdvanceDialogueAutomatically = true,
+                AutoAdvanceShouldDisplayOption = true,
+                TimeUntilAdvance = 2.5f,
                 Volume = 1f,
                 EditorInfo = new EditableConversationNode.EditorArgs { isRoot = true, xPos = 150f, yPos = 60f }
             };

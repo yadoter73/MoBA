@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using DialogueEditor;
 using KinematicCharacterController.Examples;
+using MoBA.Interaction;
+using MoBA.Player;
 using PrimeTween;
 using Unity.Cinemachine;
 using UnityEngine;
@@ -11,7 +14,7 @@ using UnityEngine.Playables;
 using UnityEngine.UI;
 using Zenject;
 
-public class Stone : MonoBehaviour, IInteractable
+public class Stone : MonoBehaviour, IInteractable, IConditionalInteractionPrompt
 {
     private enum QuestStage
     {
@@ -36,9 +39,12 @@ public class Stone : MonoBehaviour, IInteractable
     [Inject(Id = "TextScript", Optional = true)] private TextRenaming _textRen;
     [Inject(Id = "PlayerTransform", Optional = true)] private Transform _player;
     [Inject(Id = "NpcConversation", Optional = true)] private NPCConversation _npcConversation;
+    [Inject(Optional = true)] private IPlayerControlLock _playerControlLock;
 
     public event Action OnSayaSeated;
     public bool IsSayaSeated => _stage == QuestStage.SayaSeatedInHouse;
+    public InteractionPromptType PromptType => InteractionPromptType.Interact;
+    public bool CanInteractNow => _stage == QuestStage.WaitingForStoneApproach;
 
     private QuestStage _stage = QuestStage.WaitingForStoneApproach;
     private Image _blinkOverlayImage;
@@ -86,7 +92,7 @@ public class Stone : MonoBehaviour, IInteractable
             _sayaRoped.SetActive(false);
         }
 
-        // На старте Сая стоит у озера в нормальном масштабе с коллизией и без шагания на месте
+        // На старте у реки Саи НЕ должно быть видно — она появится только после падения и утопления камня
         if (_saya != null)
         {
             EnsureSayaScaleAndCollision(_saya, isSitting: false);
@@ -97,13 +103,10 @@ public class Stone : MonoBehaviour, IInteractable
             }
             _sayaPoseRig.Initialize(_player);
             _sayaPoseRig.SetStandingIdle(true);
+            _saya.SetActive(false);
         }
 
-        // Направляем стрелочки слева и справа прямо к камню
-        if (PointerInmpulse.Instance != null)
-        {
-            PointerInmpulse.Instance.SetGuidanceTarget(transform, enableWorldPointers: true);
-        }
+        // На старте боковые стрелки к озеру не включаем (3D-указатель над озером остаётся активным в PointerInmpulse)
     }
 
     private void OnEnable()
@@ -183,13 +186,7 @@ public class Stone : MonoBehaviour, IInteractable
         {
             case QuestStage.WaitingForStoneApproach:
             {
-                // Автоматический запуск кат-сцены, когда игрок подошёл к самому камню
-                Vector3 toStone = transform.position - _player.position;
-                float flatDist = new Vector2(toStone.x, toStone.z).magnitude;
-                if (flatDist <= _stoneAutoTriggerDistance)
-                {
-                    TriggerLakeCutscene(0.15f);
-                }
+                // Игрок сам подходит к реке и берёт камень через взаимодействие (Press E -> Interact)
                 break;
             }
 
@@ -283,7 +280,7 @@ public class Stone : MonoBehaviour, IInteractable
     {
         if (_stage == QuestStage.WaitingForStoneApproach)
         {
-            TriggerLakeCutscene(0.25f);
+            TriggerLakeCutscene(0.1f);
         }
     }
 
@@ -302,20 +299,187 @@ public class Stone : MonoBehaviour, IInteractable
             _textRen.HideObjective(0.3f);
         }
 
-        if (_cutscene != null)
+        PlayLakeCutsceneAsync(delay, this.GetCancellationTokenOnDestroy()).Forget();
+    }
+
+    private async UniTaskVoid PlayLakeCutsceneAsync(float delay, CancellationToken token)
+    {
+        IDisposable controlLock = _playerControlLock?.AcquireLock(unlockCursor: false);
+        CinemachineVirtualCameraBase camStone = null;
+        CinemachineVirtualCameraBase camSaya = null;
+
+        try
         {
-            Tween.Delay(delay).OnComplete(() =>
+            if (delay > 0f)
             {
-                if (_cutscene != null)
+                await UniTask.Delay(TimeSpan.FromSeconds(delay), cancellationToken: token);
+            }
+
+            // Останавливаем PlayableDirector, чтобы его старый Timeline-клип не подбрасывал Саю в воздух
+            if (_cutscene != null)
+            {
+                _cutscene.Stop();
+                foreach (CinemachineVirtualCameraBase vcam in _cutscene.GetComponentsInChildren<CinemachineVirtualCameraBase>(true))
                 {
-                    SetCutsceneCamerasEnabled(true);
-                    _cutscene.Play();
+                    if (vcam == null) continue;
+                    if (vcam.name == "CinemachineCamera") camStone = vcam;
+                    else if (vcam.name == "CinemachineCamera (1)") camSaya = vcam;
+                    vcam.enabled = false;
                 }
-            });
-        }
-        else
-        {
+            }
+
+            // Гарантируем, что Сая скрыта до тех пор, пока камень не утонет в реке
+            if (_saya != null)
+            {
+                _saya.SetActive(false);
+            }
+
+            // Включаем первую камеру кат-сцены (вид на бросок камня и реку)
+            if (camStone != null)
+            {
+                camStone.Priority = 100;
+                camStone.enabled = true;
+            }
+
+            // Определяем реальную высоту поверхности воды
+            float waterY = 7.51f;
+            GameObject waterPlane = GameObject.Find("Water_Plane");
+            if (waterPlane != null)
+            {
+                waterY = waterPlane.transform.position.y;
+            }
+
+            // Отключаем коллайдер камня и его Animator (чтобы ничего не мешало полёту)
+            Collider stoneCol = GetComponent<Collider>();
+            if (stoneCol != null) stoneCol.enabled = false;
+            Animator stoneAnim = GetComponent<Animator>();
+            if (stoneAnim != null) stoneAnim.enabled = false;
+
+            // Шаг 1: Камень летит по дуге в реку
+            Vector3 stoneStart = transform.position;
+            Vector3 stoneWaterEntry = new Vector3(-59.19f, waterY + 0.15f, 153.11f);
+            const float throwDuration = 0.85f;
+            float elapsed = 0f;
+            while (elapsed < throwDuration)
+            {
+                elapsed += Time.deltaTime;
+                float u = Mathf.Clamp01(elapsed / throwDuration);
+                Vector3 pos = Vector3.Lerp(stoneStart, stoneWaterEntry, u);
+                pos.y += Mathf.Sin(u * Mathf.PI) * 7.8f;
+                transform.position = pos;
+                transform.Rotate(new Vector3(320f, 180f, 140f) * Time.deltaTime, Space.Self);
+                await UniTask.Yield(PlayerLoopTiming.Update, token);
+            }
+            transform.position = stoneWaterEntry;
+
+            // Шаг 2: Камень медленно утопает под поверхностью воды
+            Vector3 stoneSinkEnd = new Vector3(stoneWaterEntry.x, waterY - 4.2f, stoneWaterEntry.z);
+            const float sinkDuration = 0.75f;
+            elapsed = 0f;
+            while (elapsed < sinkDuration)
+            {
+                elapsed += Time.deltaTime;
+                float u = Mathf.Clamp01(elapsed / sinkDuration);
+                float ease = u * u;
+                transform.position = Vector3.Lerp(stoneWaterEntry, stoneSinkEnd, ease);
+                transform.Rotate(new Vector3(70f, 40f, 30f) * Time.deltaTime, Space.Self);
+                await UniTask.Yield(PlayerLoopTiming.Update, token);
+            }
+
+            MeshRenderer stoneRend = GetComponent<MeshRenderer>();
+            if (stoneRend != null) stoneRend.enabled = false;
+
+            // Короткая тревожная пауза после того, как камень утонул
+            await UniTask.Delay(TimeSpan.FromSeconds(0.40f), cancellationToken: token);
+
+            // Шаг 3: Переключаемся на вторую камеру и выпускаем Саю из глубины реки с анимацией ходьбы по дну/берегу
+            if (camSaya != null)
+            {
+                camSaya.Priority = 110;
+                camSaya.enabled = true;
+            }
+
+            if (_saya != null)
+            {
+                EnsureSayaScaleAndCollision(_saya, isSitting: false);
+                EnsureArmatureGrounded(_saya.transform);
+
+                Vector2 riverStartXZ = new Vector2(-67.2f, 147.2f);
+                Vector2 shoreEndXZ = new Vector2(-53.2f, 133.2f);
+                Vector3 walkDir = new Vector3(shoreEndXZ.x - riverStartXZ.x, 0f, shoreEndXZ.y - riverStartXZ.y).normalized;
+                Quaternion walkRot = Quaternion.LookRotation(walkDir, Vector3.up);
+
+                float riverBedY = SampleGroundHeight(riverStartXZ.x, riverStartXZ.y, waterY - 3.6f);
+                float startY = Mathf.Min(riverBedY, waterY - 2.6f);
+
+                _saya.transform.position = new Vector3(riverStartXZ.x, startY, riverStartXZ.y);
+                _saya.transform.rotation = walkRot;
+                _saya.SetActive(true);
+
+                if (_sayaPoseRig == null)
+                {
+                    _sayaPoseRig = _saya.GetComponent<SayaSeatedPoseRig>() ?? _saya.AddComponent<SayaSeatedPoseRig>();
+                }
+                _sayaPoseRig.Initialize(_player);
+                _sayaPoseRig.StartWalking();
+                _sayaPoseRig.SetWalkPlaybackSpeed(0.95f);
+
+                const float emergeWalkDuration = 3.4f;
+                elapsed = 0f;
+                while (elapsed < emergeWalkDuration)
+                {
+                    elapsed += Time.deltaTime;
+                    float u = Mathf.Clamp01(elapsed / emergeWalkDuration);
+                    float x = Mathf.Lerp(riverStartXZ.x, shoreEndXZ.x, u);
+                    float z = Mathf.Lerp(riverStartXZ.y, shoreEndXZ.y, u);
+
+                    float groundY = SampleGroundHeight(x, z, _saya.transform.position.y);
+                    // В самом начале Сая скрыта под водой и плавно выходит по дну на берег — строго по рельефу, не вылетая
+                    float y = u < 0.18f
+                        ? Mathf.Lerp(startY, groundY, Mathf.SmoothStep(0f, 1f, u / 0.18f))
+                        : groundY;
+
+                    _saya.transform.position = new Vector3(x, y, z);
+                    _saya.transform.rotation = walkRot;
+                    await UniTask.Yield(PlayerLoopTiming.Update, token);
+                }
+
+                _sayaPoseRig.SetStandingIdle(true);
+                await UniTask.Delay(TimeSpan.FromSeconds(0.25f), cancellationToken: token);
+            }
+
+            // Шаг 4: Плавное затемнение, переключение на следующий этап ("Найти Саю" у верёвки) и возврат камеры игроку
+            Image blackImg = EnsureBlinkOverlayReady(0f);
+            if (blackImg != null)
+            {
+                blackImg.gameObject.SetActive(true);
+                Canvas parentCanvas = blackImg.GetComponentInParent<Canvas>(true);
+                if (parentCanvas != null) parentCanvas.enabled = true;
+                await Tween.Alpha(blackImg, 1.0f, 0.45f, Ease.InQuad).ToUniTask(cancellationToken: token);
+            }
+
+            if (camStone != null) { camStone.Priority = 0; camStone.enabled = false; }
+            if (camSaya != null) { camSaya.Priority = 0; camSaya.enabled = false; }
+
             OnCutsceneEnd(null);
+
+            if (blackImg != null)
+            {
+                blackImg.color = new Color(0f, 0f, 0f, 1f);
+                blackImg.gameObject.SetActive(true);
+                await UniTask.Delay(TimeSpan.FromSeconds(0.25f), cancellationToken: token);
+                await Tween.Alpha(blackImg, 0.0f, 0.45f, Ease.OutQuad).ToUniTask(cancellationToken: token);
+                blackImg.gameObject.SetActive(false);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            if (camStone != null) { camStone.Priority = 0; camStone.enabled = false; }
+            if (camSaya != null) { camSaya.Priority = 0; camSaya.enabled = false; }
+        }
+        finally
+        {
+            controlLock?.Dispose();
         }
     }
 
@@ -758,19 +922,24 @@ public class Stone : MonoBehaviour, IInteractable
     {
         if (doorTf == null) return;
 
-        // Отключаем коллайдер створки во время прохода, чтобы ни Сая, ни игрок не застряли в проёме
-        Collider col = doorTf.GetComponent<Collider>();
-        if (col != null) col.enabled = false;
-
         Door doorComp = doorTf.GetComponent<Door>();
         if (doorComp != null)
         {
-            doorComp.Interact(0);
+            // Открываем только закрытую дверь (уже открытую не закрываем) и сохраняем возможность взаимодействовать с ней
+            if (!doorComp.IsOpen)
+            {
+                doorComp.Open();
+            }
         }
         else
         {
+            // Если дверь уже открыта (отклонена от начального закрытого положения 0 более чем на 20 градусов), не трогаем её
             Vector3 euler = doorTf.localEulerAngles;
-            Tween.LocalRotation(doorTf, Quaternion.Euler(euler.x, openLocalYaw, euler.z), 0.65f, Ease.InOutBack);
+            bool alreadyOpen = Mathf.Abs(Mathf.DeltaAngle(euler.y, 0f)) > 20f;
+            if (!alreadyOpen && Mathf.Abs(Mathf.DeltaAngle(euler.y, openLocalYaw)) > 10f)
+            {
+                Tween.LocalRotation(doorTf, Quaternion.Euler(euler.x, openLocalYaw, euler.z), 0.65f, Ease.InOutBack);
+            }
         }
     }
 

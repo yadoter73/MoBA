@@ -7,6 +7,8 @@ using System.Threading;
 
 public class PointerInmpulse : MonoBehaviour
 {
+    private const float MaxEdgeArrowAlpha = 100f / 255f;
+
     public static PointerInmpulse Instance { get; private set; }
 
     [SerializeField] private GameObject[] _pointers;
@@ -16,7 +18,7 @@ public class PointerInmpulse : MonoBehaviour
     private readonly Dictionary<Transform, CancellationTokenSource> _tasks = new();
 
     private Transform _guidanceTarget;
-    private bool _guidanceActive = true;
+    private bool _guidanceActive = false;
     private bool _worldPointersEnabled = true;
     private bool _questGuidanceActive;
 
@@ -34,6 +36,7 @@ public class PointerInmpulse : MonoBehaviour
     private bool _rightArrowVisible;
     private float _leftArrowAlpha;
     private float _rightArrowAlpha;
+    private Camera _cachedMainCam;
 
     private void Awake()
     {
@@ -43,24 +46,22 @@ public class PointerInmpulse : MonoBehaviour
 
     private void Start()
     {
-        // Находим камень у озера, чтобы стрелки слева и справа сразу вели игрока прямо к самому камню
-        if (_guidanceTarget == null)
+        // На старте боковые HUD-стрелки (слева/справа) выключены — игрок сам находит озеро по "Find Lake".
+        // 3D-указатель над озером (_pointers) остаётся активным и продолжает плавно двигаться вверх-вниз.
+        if (_pointers != null && _pointers.Length > 0 && _pointers[0] != null)
         {
             Stone stone = FindAnyObjectByType<Stone>();
             if (stone != null)
             {
-                _guidanceTarget = stone.transform;
-                // Выравниваем 3D-указатель озера прямо над камнем, чтобы он указывал точно на камень
-                if (_pointers != null && _pointers.Length > 0 && _pointers[0] != null)
-                {
-                    Vector3 stonePos = stone.transform.position;
-                    _pointers[0].transform.position = new Vector3(stonePos.x, stonePos.y + 5.2f, stonePos.z);
-                }
+                Vector3 stonePos = stone.transform.position;
+                _pointers[0].transform.position = new Vector3(stonePos.x, stonePos.y + 5.2f, stonePos.z);
             }
-            else if (_pointers != null && _pointers.Length > 0 && _pointers[0] != null)
-            {
-                _guidanceTarget = _pointers[0].transform;
-            }
+        }
+
+        if (!_guidanceActive)
+        {
+            ApplyEdgeArrowAlpha(isLeft: true, alpha: 0f);
+            ApplyEdgeArrowAlpha(isLeft: false, alpha: 0f);
         }
     }
 
@@ -148,7 +149,8 @@ public class PointerInmpulse : MonoBehaviour
             return;
         }
 
-        Transform camTf = Camera.main != null ? Camera.main.transform : transform;
+        if (_cachedMainCam == null) _cachedMainCam = Camera.main;
+        Transform camTf = _cachedMainCam != null ? _cachedMainCam.transform : transform;
         float angleThreshold = Mathf.Cos(viewAngle * 0.5f * Mathf.Deg2Rad);
         Vector3 origin = camTf.position;
         Vector3 forward = camTf.forward;
@@ -184,7 +186,7 @@ public class PointerInmpulse : MonoBehaviour
 
     private void ApplyEdgeArrowAlpha(bool isLeft, float alpha)
     {
-        alpha = Mathf.Clamp01(alpha);
+        alpha = Mathf.Clamp(alpha, 0f, MaxEdgeArrowAlpha);
         if (isLeft)
         {
             _leftArrowAlpha = alpha;
@@ -192,7 +194,7 @@ public class PointerInmpulse : MonoBehaviour
             if (_leftArrowImage != null)
             {
                 Color c = _leftArrowImage.color;
-                _leftArrowImage.color = new Color(c.r, c.g, c.b, alpha);
+                _leftArrowImage.color = new Color(c.r, c.g, c.b, 1f);
             }
         }
         else
@@ -202,7 +204,7 @@ public class PointerInmpulse : MonoBehaviour
             if (_rightArrowImage != null)
             {
                 Color c = _rightArrowImage.color;
-                _rightArrowImage.color = new Color(c.r, c.g, c.b, alpha);
+                _rightArrowImage.color = new Color(c.r, c.g, c.b, 1f);
             }
         }
     }
@@ -215,7 +217,7 @@ public class PointerInmpulse : MonoBehaviour
             _leftArrowVisible = nextVisible;
             _leftFadeTween.Stop();
 
-            float targetAlpha = nextVisible ? 1f : 0f;
+            float targetAlpha = nextVisible ? MaxEdgeArrowAlpha : 0f;
             Ease ease = nextVisible ? Ease.OutSine : Ease.InOutSine;
             _leftFadeTween = Tween.Custom(
                 _leftArrowAlpha,
@@ -231,7 +233,7 @@ public class PointerInmpulse : MonoBehaviour
             _rightArrowVisible = nextVisible;
             _rightFadeTween.Stop();
 
-            float targetAlpha = nextVisible ? 1f : 0f;
+            float targetAlpha = nextVisible ? MaxEdgeArrowAlpha : 0f;
             Ease ease = nextVisible ? Ease.OutSine : Ease.InOutSine;
             _rightFadeTween = Tween.Custom(
                 _rightArrowAlpha,
@@ -254,7 +256,8 @@ public class PointerInmpulse : MonoBehaviour
             return;
         }
 
-        Transform refTf = Camera.main != null ? Camera.main.transform : transform;
+        if (_cachedMainCam == null) _cachedMainCam = Camera.main;
+        Transform refTf = _cachedMainCam != null ? _cachedMainCam.transform : transform;
         Vector3 toTarget = _guidanceTarget.position - refTf.position;
         Vector3 flatToTarget = new Vector3(toTarget.x, 0f, toTarget.z);
         float flatDist = flatToTarget.magnitude;
@@ -279,16 +282,22 @@ public class PointerInmpulse : MonoBehaviour
         AnimateEdgeArrow(isLeft: true, nextVisible: wantLeft, fadeDuration: wantLeft ? 0.65f : 1.25f);
         AnimateEdgeArrow(isLeft: false, nextVisible: wantRight, fadeDuration: wantRight ? 0.65f : 1.25f);
 
+        if (_leftArrowAlpha <= 0.001f && _rightArrowAlpha <= 0.001f)
+            return;
+
         float pulse = 0.88f + 0.12f * Mathf.Sin(Time.unscaledTime * 5.2f);
         float offsetBob = Mathf.Sin(Time.unscaledTime * 5.2f) * 10f;
 
-        if (_leftArrowImage != null)
+        if (_leftArrowImage != null && _leftArrowAlpha > 0.001f)
+        {
             _leftArrowImage.color = new Color(pulse, 0.08f * pulse, 0.08f * pulse, _leftArrowAlpha);
-        if (_rightArrowImage != null)
+            _leftArrowRect.anchoredPosition = new Vector2(86f - offsetBob, 0f);
+        }
+        if (_rightArrowImage != null && _rightArrowAlpha > 0.001f)
+        {
             _rightArrowImage.color = new Color(pulse, 0.08f * pulse, 0.08f * pulse, _rightArrowAlpha);
-
-        _leftArrowRect.anchoredPosition = new Vector2(86f - offsetBob, 0f);
-        _rightArrowRect.anchoredPosition = new Vector2(-86f + offsetBob, 0f);
+            _rightArrowRect.anchoredPosition = new Vector2(-86f + offsetBob, 0f);
+        }
     }
 
     private Material _arrowMaterial;

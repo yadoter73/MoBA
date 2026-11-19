@@ -25,9 +25,9 @@ public class MirrorReflection : MonoBehaviour
 
     [Header("Rendering")]
     [SerializeField] private Material _mirrorMaterial = null;
-    [SerializeField] private int _rtWidth = 512;
-    [SerializeField] private int _rtHeight = 512;
-    [SerializeField] private float _maxRenderDistance = 28f;
+    [SerializeField] private int _rtWidth = 256;
+    [SerializeField] private int _rtHeight = 256;
+    [SerializeField] private float _maxRenderDistance = 12f;
     [SerializeField] private float _clipPlaneOffset = -0.02f;
 
     private RenderTexture _renderTexture;
@@ -161,7 +161,7 @@ public class MirrorReflection : MonoBehaviour
         _mirrorCamera.clearFlags = CameraClearFlags.Skybox;
         _mirrorCamera.allowHDR = true;
         _mirrorCamera.nearClipPlane = 0.05f;
-        _mirrorCamera.farClipPlane = 60f;
+        _mirrorCamera.farClipPlane = 24f;
 
         int excludedMask = LayerMask.GetMask("Player", "UI", "Arrow");
         _mirrorCamera.cullingMask = ~excludedMask;
@@ -169,7 +169,7 @@ public class MirrorReflection : MonoBehaviour
         var urpData = camGo.GetComponent<UniversalAdditionalCameraData>();
         if (urpData == null) urpData = camGo.AddComponent<UniversalAdditionalCameraData>();
         urpData.renderPostProcessing = false;
-        urpData.renderShadows = true;
+        urpData.renderShadows = false;
     }
 
     private void CleanupMirrorObjects()
@@ -263,7 +263,7 @@ public class MirrorReflection : MonoBehaviour
         _mirrorCamera.aspect = aspect;
         _mirrorCamera.fieldOfView = fov;
         _mirrorCamera.nearClipPlane = 0.05f;
-        _mirrorCamera.farClipPlane = 60f;
+        _mirrorCamera.farClipPlane = 24f;
 
         if (_runtimeMaterial != null)
         {

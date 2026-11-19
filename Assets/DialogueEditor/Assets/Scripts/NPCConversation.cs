@@ -364,6 +364,8 @@ namespace DialogueEditor
 
         private void CreateParameters(EditableConversation ec, Conversation conversation)
         {
+            if (ec == null || ec.Parameters == null) return;
+
             for (int i = 0; i < ec.Parameters.Count; i++)
             {
                 if (ec.Parameters[i].ParameterType == EditableParameter.eParamType.Bool)
@@ -425,6 +427,7 @@ namespace DialogueEditor
         public void CopyParamActions(EditableConversationNode editable, ConversationNode node)
         {
             node.ParamActions = new List<SetParamAction>();
+            if (editable == null || editable.ParamActions == null) return;
 
             for (int i = 0; i < editable.ParamActions.Count; i++)
             {
@@ -460,6 +463,7 @@ namespace DialogueEditor
 
                 // Connections
                 List<EditableConnection> editableConnections = editableNode.Connections;
+                if (editableConnections == null) continue;
                 for (int j = 0; j < editableConnections.Count; j++)
                 {
 
@@ -498,6 +502,7 @@ namespace DialogueEditor
 
                 // Connections
                 List<EditableConnection> editableConnections = editableNode.Connections;
+                if (editableConnections == null) continue;
                 for (int j = 0; j < editableConnections.Count; j++)
                 {
                     int childID = editableConnections[j].NodeUID;

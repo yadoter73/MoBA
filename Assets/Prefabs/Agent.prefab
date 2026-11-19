@@ -13,6 +13,8 @@ GameObject:
   - component: {fileID: 8195903562624998109}
   - component: {fileID: 6661798454427387549}
   - component: {fileID: 8605173295192429274}
+  - component: {fileID: 5140351548437638747}
+  - component: {fileID: 2470909833583607753}
   m_Layer: 0
   m_Name: Agent
   m_TagString: Untagged
@@ -76,6 +78,15 @@ MonoBehaviour:
   walkPoint: {x: 0, y: 0, z: 0}
   _sightRange: 20
   _attackRange: 7
+  _immediateKillRange: 2.65
+  _patrolSpeed: 4.2
+  _chaseSpeed: 6.9
+  _arenaEdgeMargin: 14
+  _minPointTravelDistance: 12
+  _minSeparationBetweenMonsters: 14
+  _minNavMeshEdgeClearance: 2.2
+  _skipLookingState: 0
+  _headAimHeight: 1.15
   playerInSightRange: 0
   playerInAttackRange: 0
   playerWaitingToLeave: 0
@@ -110,6 +121,127 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _enemyAnim: {fileID: 5783350097604244262}
+--- !u!82 &5140351548437638747
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6854190122043147980}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 8300000, guid: f14c1e8d6e6f1244c89ad0b016ba531f, type: 3}
+  m_PlayOnAwake: 0
+  m_Volume: 0.88
+  m_Pitch: 1
+  Loop: 1
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 0
+  MinDistance: 4
+  MaxDistance: 42
+  Pan2D: 0
+  rolloffMode: 1
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+--- !u!114 &2470909833583607753
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6854190122043147980}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc2c8621db29a4d4ab39ae81beac0a1b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MoBA.Audio.EnemyAudioController
+  _isGiantMonster: 0
+  _moveLoopSource: {fileID: 5140351548437638747}
+  _spotVoiceSource: {fileID: 0}
+  _moveLoopClip: {fileID: 8300000, guid: f14c1e8d6e6f1244c89ad0b016ba531f, type: 3}
+  _spotPlayerClip: {fileID: 0}
+  _moveVolume: 0.88
+  _spotVolume: 1
+  _patrolPitch: 1
+  _chasePitch: 1
+  _spotCooldown: 4.5
+  _minDistance: 4
+  _maxDistance: 42
 --- !u!1001 &5783350097652037538
 PrefabInstance:
   m_ObjectHideFlags: 0

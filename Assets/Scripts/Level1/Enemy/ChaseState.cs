@@ -23,7 +23,7 @@ public class ChaseState : EnemyState
             return;
         }
 
-        if (_enemy.playerInAttackRange)
+        if (!_enemy.SkipLookingState && _enemy.playerInAttackRange)
         {
             _enemy.SwitchState(new LookingState(_enemy, _arenaBounds, _whatIsGround, _anim));
             return;

@@ -43,3 +43,6 @@
 ## 7. Сцена и ввод (Input System)
 - Использовать **только новую Unity Input System** (`InputSystem_Actions`). Использование старого `UnityEngine.Input` (`Input.GetKeyDown` и т.п.) запрещено.
 - Загрузки сцен выносить в единый механизм с очисткой/фейдом, не хардкодить магические числа индексов сцен в десятках скриптов.
+
+## 8. Диалоги (DialogueEditor)
+- При создании или генерации реплик (`EditableSpeechNode` / `NPCConversation`) всегда включать **Automatically Advance** (`AdvanceDialogueAutomatically = true`, `TimeUntilAdvance > 0f`, по необходимости `AutoAdvanceShouldDisplayOption = true`), чтобы реплики автоматически переключались и не зависали.

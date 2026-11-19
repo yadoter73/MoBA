@@ -16,6 +16,7 @@ namespace KinematicCharacterController.Examples
 		public UnityEvent<PressedStateEventArgs> OnPlayerJumpEvent { get; set; } = new();
 		public UnityEvent<PressedStateEventArgs> OnPlayerInteractEvent { get; set; } = new();
         public UnityEvent<PressedStateEventArgs> OnPlayerPauseEvent { get; set; } = new();
+        public UnityEvent<PressedStateEventArgs> OnPlayerSprintEvent { get; set; } = new();
         public void OnPlayerMove(InputAction.CallbackContext ctx)
         {
             Vector2 value = ctx.ReadValue<Vector2>();
@@ -41,6 +42,24 @@ namespace KinematicCharacterController.Examples
 			PressedState pressedState = GetPressedState(ctx);
 			OnPlayerPauseEvent?.Invoke(new PressedStateEventArgs(pressedState));
 		}
+        public void OnSprint(InputAction.CallbackContext ctx)
+        {
+            PressedState pressedState = GetPressedState(ctx);
+            OnPlayerSprintEvent?.Invoke(new PressedStateEventArgs(pressedState));
+        }
+
+        private void OnDisable()
+        {
+            OnPlayerSprintEvent?.Invoke(new PressedStateEventArgs(PressedState.Canceled));
+        }
+
+        private void OnApplicationFocus(bool hasFocus)
+        {
+            if (!hasFocus)
+            {
+                OnPlayerSprintEvent?.Invoke(new PressedStateEventArgs(PressedState.Canceled));
+            }
+        }
 
         private PressedState GetPressedState(InputAction.CallbackContext ctx)
         {

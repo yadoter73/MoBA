@@ -81,6 +81,19 @@ namespace KinematicCharacterController.Examples
         public float CrouchingHeight = 4f;
         public float StandingHeight = 8f;
         public CharacterState CurrentCharacterState { get; private set; }
+        public float MoveSpeedMultiplier { get; set; } = 1f;
+        public bool IsCrouching => _isCrouching;
+        public bool HasMoveInput => _moveInputVector.sqrMagnitude > 0.0001f;
+        public float ForwardMoveInput => _moveInputVector.z;
+        public bool IsMovingHorizontally
+        {
+            get
+            {
+                if (Motor == null) return false;
+                Vector3 planarVel = Vector3.ProjectOnPlane(Motor.Velocity, Motor.CharacterUp);
+                return planarVel.sqrMagnitude > 0.04f;
+            }
+        }
 
         private Collider[] _probedColliders = new Collider[8];
         private RaycastHit[] _probedHits = new RaycastHit[8];
@@ -354,7 +367,8 @@ namespace KinematicCharacterController.Examples
                             // Calculate target velocity
                             Vector3 inputRight = Vector3.Cross(_cameraPlanarRotation * _moveInputVector, Motor.CharacterUp);
                             Vector3 reorientedInput = Vector3.Cross(effectiveGroundNormal, inputRight).normalized * (_cameraPlanarRotation * _moveInputVector).magnitude;
-                            Vector3 targetMovementVelocity = reorientedInput * MaxStableMoveSpeed;
+                            float speedMultiplier = _isCrouching ? 1f : Mathf.Max(0f, MoveSpeedMultiplier);
+                            Vector3 targetMovementVelocity = reorientedInput * (MaxStableMoveSpeed * speedMultiplier);
 
                             // Smooth movement Velocity
                             currentVelocity = Vector3.Lerp(currentVelocity, targetMovementVelocity, 1f - Mathf.Exp(-StableMovementSharpness * deltaTime));

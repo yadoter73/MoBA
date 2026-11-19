@@ -5,40 +5,57 @@ using Zenject;
 namespace MoBA.Narrative
 {
     /// <summary>
-    /// Состояние и переходы квеста «Ключ от калитки»: FindKey -> GoToGate -> GateOpened -> TalkToMonster.
+    /// Конечный автомат и события сюжетного квеста:
+    /// TalkToSaya -> FindKey -> GoToGate -> GateOpened -> TalkToMonster -> CollectGoods -> BringToSaya -> Completed.
     /// </summary>
     public sealed class KeyQuestService : IInitializable, IDisposable
     {
+        private const string TalkToSayaHint = "Поговорить с Саей";
         private const string FindKeyHint = "Найти ключ";
         private const string EnterHouseHint = "Зайти в дом";
-        private const string OpenGateHint = "Открыть калитку";
+        private const string GoToStoreHint = "Дойти до продуктового";
+        private const string CollectGoodsHint = "Взять у продавца: водка, 3 яблока, хлеб";
+        private const string BringToSayaHint = "Вернуться к Сае";
 
         private readonly Stone _stone;
         private readonly TextRenaming _textRenaming;
         private readonly LineToSaya _lineToSaya;
         private readonly PointerInmpulse _pointerImpulse;
+        private readonly GroceryList _groceryList;
         private readonly KeyQuestConfig _config;
 
         private bool _isPlayerInsideHouse;
+        private bool _monsterOrderCompleted;
 
         public KeyQuestStage Stage { get; private set; } = KeyQuestStage.Inactive;
         public bool HasGateKey { get; private set; }
         public bool IsQuestStarted => Stage != KeyQuestStage.Inactive;
-        public bool CanTalkToMonster => Stage >= KeyQuestStage.GateOpened;
+        public bool CanCollectKey => Stage == KeyQuestStage.FindKey;
+        public bool CanTalkToSayaIntro => Stage == KeyQuestStage.TalkToSaya;
+        public bool CanTalkToSayaFinal => Stage == KeyQuestStage.BringToSaya;
+        public bool CanTalkToMonster => Stage == KeyQuestStage.GateOpened
+            || Stage == KeyQuestStage.TalkToMonster
+            || Stage == KeyQuestStage.CollectGoods
+            || Stage == KeyQuestStage.BringToSaya;
+        public bool IsMonsterOrderCompleted => _monsterOrderCompleted;
+        public bool AreCounterGoodsUnlocked => Stage == KeyQuestStage.CollectGoods;
 
         public event Action<KeyQuestStage> OnStageChanged;
+        public event Action OnCounterGoodsUnlocked;
 
         public KeyQuestService(
             Stone stone,
             TextRenaming textRenaming,
             LineToSaya lineToSaya,
             PointerInmpulse pointerImpulse,
+            GroceryList groceryList,
             KeyQuestConfig config)
         {
             _stone = stone;
             _textRenaming = textRenaming;
             _lineToSaya = lineToSaya;
             _pointerImpulse = pointerImpulse;
+            _groceryList = groceryList;
             _config = config;
         }
 
@@ -51,6 +68,11 @@ namespace MoBA.Narrative
             }
 
             _stone.OnSayaSeated += HandleSayaSeated;
+            if (_groceryList != null)
+            {
+                _groceryList.OnAllCollected += HandleAllGoodsCollected;
+            }
+
             if (_stone.IsSayaSeated)
             {
                 HandleSayaSeated();
@@ -62,6 +84,10 @@ namespace MoBA.Narrative
             if (_stone != null)
             {
                 _stone.OnSayaSeated -= HandleSayaSeated;
+            }
+            if (_groceryList != null)
+            {
+                _groceryList.OnAllCollected -= HandleAllGoodsCollected;
             }
         }
 
@@ -76,35 +102,9 @@ namespace MoBA.Narrative
             }
         }
 
-        public void CollectGateKey()
+        public void NotifySayaIntroDialogueFinished()
         {
-            if (HasGateKey) return;
-            HasGateKey = true;
-
-            if (Stage < KeyQuestStage.GoToGate)
-            {
-                TransitionToGoToGate();
-            }
-        }
-
-        public void NotifyGateOpened()
-        {
-            if (!HasGateKey || Stage >= KeyQuestStage.GateOpened) return;
-
-            SetStage(KeyQuestStage.GateOpened);
-            ClearGateGuidance();
-            _textRenaming?.ClearQuestObjective(0.6f);
-        }
-
-        public void NotifyMonsterTalkStarted()
-        {
-            if (!CanTalkToMonster || Stage == KeyQuestStage.TalkToMonster) return;
-            SetStage(KeyQuestStage.TalkToMonster);
-        }
-
-        private void HandleSayaSeated()
-        {
-            if (IsQuestStarted) return;
+            if (Stage != KeyQuestStage.TalkToSaya) return;
 
             if (HasGateKey)
             {
@@ -116,11 +116,80 @@ namespace MoBA.Narrative
             UpdateHouseObjectiveText();
         }
 
+        public void CollectGateKey()
+        {
+            if (HasGateKey || Stage != KeyQuestStage.FindKey) return;
+            HasGateKey = true;
+            TransitionToGoToGate();
+        }
+
+        public void NotifyGateOpened()
+        {
+            if (!HasGateKey || Stage != KeyQuestStage.GoToGate) return;
+
+            SetStage(KeyQuestStage.GateOpened);
+            ClearGuidance();
+            _textRenaming?.ClearQuestObjective(0.6f);
+        }
+
+        public void NotifyMonsterTalkStarted()
+        {
+            if (Stage == KeyQuestStage.GateOpened)
+            {
+                SetStage(KeyQuestStage.TalkToMonster);
+            }
+        }
+
+        public void NotifyMonsterOrderDialogueFinished()
+        {
+            if (_monsterOrderCompleted) return;
+            if (Stage != KeyQuestStage.GateOpened && Stage != KeyQuestStage.TalkToMonster) return;
+
+            _monsterOrderCompleted = true;
+            _groceryList?.Reset();
+            SetStage(KeyQuestStage.CollectGoods);
+            _textRenaming?.ShowQuestObjective(CollectGoodsHint);
+            OnCounterGoodsUnlocked?.Invoke();
+        }
+
+        public bool CollectGroceryItem(GroceryItemType itemType)
+        {
+            if (Stage != KeyQuestStage.CollectGoods || _groceryList == null) return false;
+            return _groceryList.TryCollect(itemType);
+        }
+
+        public void NotifySayaFinalDialogueFinished()
+        {
+            if (Stage != KeyQuestStage.BringToSaya) return;
+
+            ClearGuidance();
+            _textRenaming?.ClearQuestObjective(0.6f);
+            SetStage(KeyQuestStage.Completed);
+        }
+
+        private void HandleSayaSeated()
+        {
+            if (IsQuestStarted) return;
+
+            ClearGuidance();
+            SetStage(KeyQuestStage.TalkToSaya);
+            _textRenaming?.ShowQuestObjective(TalkToSayaHint);
+        }
+
+        private void HandleAllGoodsCollected()
+        {
+            if (Stage != KeyQuestStage.CollectGoods) return;
+
+            SetStage(KeyQuestStage.BringToSaya);
+            _textRenaming?.ShowQuestObjective(BringToSayaHint);
+            ActivateGuidance(_config != null ? _config.SayaTarget : null, deactivateDist: 3.0f);
+        }
+
         private void TransitionToGoToGate()
         {
             SetStage(KeyQuestStage.GoToGate);
-            _textRenaming?.ShowQuestObjective(OpenGateHint);
-            ActivateGateGuidance();
+            _textRenaming?.ShowQuestObjective(GoToStoreHint);
+            ActivateGuidance(_config != null ? _config.GateGuidanceTarget : null, deactivateDist: 2.5f);
         }
 
         private void UpdateHouseObjectiveText()
@@ -129,27 +198,26 @@ namespace MoBA.Narrative
             _textRenaming.ShowQuestObjective(_isPlayerInsideHouse ? FindKeyHint : EnterHouseHint);
         }
 
-        private void ActivateGateGuidance()
+        private void ActivateGuidance(Transform target, float deactivateDist)
         {
-            Transform gateTarget = _config != null ? _config.GateGuidanceTarget : null;
-            if (gateTarget == null)
+            if (target == null)
             {
-                Debug.LogError("[KeyQuestService] Не задан GateGuidanceTarget в RegObj.");
+                Debug.LogError("[KeyQuestService] Не задан целевой Transform для стрелок квеста в RegObj.");
                 return;
             }
 
             if (_pointerImpulse != null)
             {
-                _pointerImpulse.SetQuestGuidanceTarget(gateTarget, enableWorldPointers: false);
+                _pointerImpulse.SetQuestGuidanceTarget(target, enableWorldPointers: false);
             }
 
             if (_lineToSaya != null)
             {
-                _lineToSaya.SetQuestTarget(gateTarget.gameObject, deactivateDist: 2.5f);
+                _lineToSaya.SetQuestTarget(target.gameObject, deactivateDist: deactivateDist);
             }
         }
 
-        private void ClearGateGuidance()
+        private void ClearGuidance()
         {
             _pointerImpulse?.ClearQuestGuidance();
             _lineToSaya?.ClearQuestTarget(0.5f);

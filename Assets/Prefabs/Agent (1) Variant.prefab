@@ -20,6 +20,14 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 37fc3fa4257bfcb469ac056128e3ae05, type: 2}
+    - target: {fileID: 8195903562624998109, guid: c53aba305f1ce9642a81b759eb42adfb, type: 3}
+      propertyPath: _chaseSpeed
+      value: 6.9
+      objectReference: {fileID: 0}
+    - target: {fileID: 8195903562624998109, guid: c53aba305f1ce9642a81b759eb42adfb, type: 3}
+      propertyPath: playerWaitingToLeave
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8397882410041889293, guid: c53aba305f1ce9642a81b759eb42adfb, type: 3}
       propertyPath: m_LocalPosition.x
       value: 38.88

@@ -465,6 +465,16 @@ namespace DialogueEditor
 
             m_currentSpeech = speech;
 
+            // Защита от зависания на последней реплике (без выходов/опций), если в ассете забыт AutomaticallyAdvance
+            if (m_currentSpeech.ConnectionType == Connection.eConnectionType.None && !m_currentSpeech.AutomaticallyAdvance)
+            {
+                m_currentSpeech.AutomaticallyAdvance = true;
+                if (m_currentSpeech.TimeUntilAdvance <= 0f)
+                {
+                    m_currentSpeech.TimeUntilAdvance = 1.8f;
+                }
+            }
+
             // Clear current options
             ClearOptions();
             m_currentSelectedIndex = 0;

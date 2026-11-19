@@ -2,11 +2,13 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Zenject;
 using KinematicCharacterController.Examples;
+using MoBA.Player;
 using PrimeTween;
 
 public class PauseManager : MonoBehaviour
 {
     [Inject] private ExamplePlayer _examPlayer;
+    [Inject(Optional = true)] private IPlayerControlLock _playerControlLock;
     [SerializeField] private GameObject _pauseMenuCanvas;
     private bool isPaused = false;
     private float _savedTimeScale = 0.5f;
@@ -41,8 +43,9 @@ public class PauseManager : MonoBehaviour
 
     public void Resume()
     {
-        Cursor.visible = false;
-        Cursor.lockState = CursorLockMode.Locked;
+        bool keepCursorUnlocked = _playerControlLock != null && _playerControlLock.IsCursorUnlocked;
+        Cursor.visible = keepCursorUnlocked;
+        Cursor.lockState = keepCursorUnlocked ? CursorLockMode.None : CursorLockMode.Locked;
         _pauseMenuCanvas.SetActive(false);
         isPaused = false;
         Time.timeScale = _savedTimeScale > 0f ? _savedTimeScale : MenuReturn.BaseTimeScale;

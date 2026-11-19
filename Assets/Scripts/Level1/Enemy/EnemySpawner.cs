@@ -4,7 +4,7 @@ using Zenject;
 
 public class EnemySpawner : MonoBehaviour
 {
-    private const int TargetMonsterCount = 4;
+    private const int TargetMonsterCount = 5;
 
     [SerializeField] private Transform[] _spawnPoints;
     [SerializeField] private GameObject[] _enemies;

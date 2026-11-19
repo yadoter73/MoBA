@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using HorrorPostProcess;
+using MoBA.Audio;
 using UnityEngine;
 using UnityEngine.AI;
 using Zenject;
@@ -35,13 +36,24 @@ public class EnemyAI : MonoBehaviour
 	[SerializeField] private float _minPointTravelDistance = 12f;
 	[SerializeField] private float _minSeparationBetweenMonsters = 14f;
 	[SerializeField] private float _minNavMeshEdgeClearance = 2.2f;
+	[SerializeField] private bool _skipLookingState = false;
+	[SerializeField] private float _headAimHeight = 1.15f;
 
 	[Inject(Optional = true)] private ArenaBounds _arenaBounds;
+
+	[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+	private static void ResetStaticState()
+	{
+		ActiveEnemies.Clear();
+		_lastFearUpdateFrame = -1;
+		_cachedHorrorShader = null;
+	}
 
 	private readonly List<Animator> _animators = new();
 	private NavMeshAgent _agent;
 	private NavMeshPath _pathCheck;
 	private EnemyState _currentState;
+	private EnemyAudioController _audioController;
 	private bool _hasMovingParam;
 	private bool _hasChasingParam;
 	private bool _hasAttackParam;
@@ -52,6 +64,7 @@ public class EnemyAI : MonoBehaviour
 	public float SightRange => _sightRange;
 	public float AttackRange => _attackRange;
 	public float ImmediateKillRange => _immediateKillRange;
+	public bool SkipLookingState => _skipLookingState;
 	public bool HasValidPath => _agent != null && _agent.enabled && _agent.isOnNavMesh;
 	public bool IsPathPending => _agent != null && _agent.pathPending;
 	public float RemainingDistance => HasValidPath ? _agent.remainingDistance : float.MaxValue;
@@ -72,6 +85,7 @@ public class EnemyAI : MonoBehaviour
 	private void Start()
 	{
 		_agent = GetComponent<NavMeshAgent>();
+		_audioController = GetComponent<EnemyAudioController>();
 		_pathCheck = new NavMeshPath();
 		if (_arenaBounds == null) _arenaBounds = FindAnyObjectByType<ArenaBounds>();
 		if (player == null)
@@ -216,10 +230,8 @@ public class EnemyAI : MonoBehaviour
 		}
 
 		float horizDist = HorizontalDistanceToPlayer();
-		bool sphereSight = Physics.CheckSphere(transform.position, _sightRange, whatIsPlayer);
-		bool sphereAttack = Physics.CheckSphere(transform.position, _attackRange, whatIsPlayer);
-		playerInSightRange = sphereSight || horizDist <= _sightRange;
-		playerInAttackRange = sphereAttack || horizDist <= _attackRange;
+		playerInSightRange = horizDist <= _sightRange;
+		playerInAttackRange = horizDist <= _attackRange;
 
 		_currentState?.UpdateState();
 	}
@@ -232,8 +244,13 @@ public class EnemyAI : MonoBehaviour
 
 	public void SwitchState(EnemyState newState)
 	{
+		bool enteringChase = newState is ChaseState && !(_currentState is ChaseState);
 		_currentState?.ExitState();
 		_currentState = newState;
+		if (enteringChase && _audioController != null)
+		{
+			_audioController.OnEnterChaseState();
+		}
 	}
 
 	public float HorizontalDistanceToPlayer()
@@ -258,7 +275,7 @@ public class EnemyAI : MonoBehaviour
 
 	public Vector3 GetHeadAimPosition()
 	{
-		return transform.position + Vector3.up * 1.15f;
+		return transform.position + Vector3.up * _headAimHeight;
 	}
 
 	public void SetPatrolSpeed()
@@ -280,10 +297,18 @@ public class EnemyAI : MonoBehaviour
 			if (_hasMovingParam) a.SetBool(AnimIsMoving, moving);
 			if (_hasChasingParam) a.SetBool(AnimIsChasing, chasing);
 		}
+		if (_audioController != null)
+		{
+			_audioController.OnMovementStateChanged(moving, chasing);
+		}
 	}
 
 	public void TriggerAttack()
 	{
+		if (_audioController != null)
+		{
+			_audioController.OnMovementStateChanged(false, false);
+		}
 		for (int i = 0; i < _animators.Count; i++)
 		{
 			Animator a = _animators[i];
