@@ -109,7 +109,7 @@ namespace MoBA.Narrative
                 TMPFont = _runtimeRepeatConversation.DefaultFont,
                 AdvanceDialogueAutomatically = true,
                 AutoAdvanceShouldDisplayOption = true,
-                TimeUntilAdvance = Mathf.Clamp(1.8f + safeText.Length * 0.045f, 2.5f, 5.5f),
+                TimeUntilAdvance = 5.0f,
                 Volume = 1f,
                 ParamActions = new List<EditableSetParamAction>(),
                 Connections = new List<EditableConnection>(),

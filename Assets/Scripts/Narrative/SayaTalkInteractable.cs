@@ -30,7 +30,8 @@ namespace MoBA.Narrative
         public bool CanInteractNow => !_runner.IsRunning
             && _questService != null
             && _questService.IsQuestStarted
-            && _questService.Stage < KeyQuestStage.Completed;
+            && _questService.Stage != KeyQuestStage.Completed
+            && _questService.Stage != KeyQuestStage.DinnerWithSaya;
 
         private void Start()
         {

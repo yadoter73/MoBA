@@ -117,9 +117,9 @@ namespace MoBA.Editor
                         changed = true;
                         fixedCount++;
                     }
-                    if (node.TimeUntilAdvance <= 0f)
+                    if (!Mathf.Approximately(node.TimeUntilAdvance, 5.0f))
                     {
-                        node.TimeUntilAdvance = isLeafNode ? 1.8f : 0.4f;
+                        node.TimeUntilAdvance = 5.0f;
                         changed = true;
                     }
                 }
@@ -365,7 +365,7 @@ namespace MoBA.Editor
                     TMPFont = font,
                     AdvanceDialogueAutomatically = true,
                     AutoAdvanceShouldDisplayOption = true,
-                    TimeUntilAdvance = Mathf.Clamp(1.8f + spec.Text.Length * 0.045f, 2.2f, 5.5f),
+                    TimeUntilAdvance = 5.0f,
                     Volume = 1f,
                     ParamActions = new List<EditableSetParamAction>(),
                     Connections = new List<EditableConnection>(),

@@ -3,7 +3,10 @@ using UnityEngine.SceneManagement;
 using Zenject;
 using KinematicCharacterController.Examples;
 using MoBA.Player;
+using MoBA.SaveSystem;
+using MoBA.Settings;
 using PrimeTween;
+using TMPro;
 
 public class PauseManager : MonoBehaviour
 {
@@ -14,6 +17,8 @@ public class PauseManager : MonoBehaviour
     private float _savedTimeScale = 0.5f;
     void Start()
     {
+        LocalizePauseMenu();
+        GameSettingsService.OnLanguageChanged += LocalizePauseMenu;
         if (_pauseMenuCanvas != null) _pauseMenuCanvas.SetActive(false);
         if (FindAnyObjectByType<MenuReturn>() != null)
         {
@@ -21,6 +26,23 @@ public class PauseManager : MonoBehaviour
             return;
         }
         _examPlayer.OnPlayerPauseEvent.AddListener(OnPauseInput);
+    }
+
+    private void OnDestroy()
+    {
+        GameSettingsService.OnLanguageChanged -= LocalizePauseMenu;
+    }
+
+    private void LocalizePauseMenu()
+    {
+        if (_pauseMenuCanvas == null) return;
+        foreach (TMP_Text label in _pauseMenuCanvas.GetComponentsInChildren<TMP_Text>(true))
+        {
+            if (label != null && !string.IsNullOrEmpty(label.text))
+            {
+                label.text = GameLocalization.TranslateAny(label.text);
+            }
+        }
     }
     public void OnPauseInput(ExamplePlayer.PressedStateEventArgs args)
     {
@@ -33,6 +55,7 @@ public class PauseManager : MonoBehaviour
     }
     public void Pause()
     {
+        LocalizePauseMenu();
         _savedTimeScale = Time.timeScale > 0f ? Time.timeScale : MenuReturn.BaseTimeScale;
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
@@ -61,6 +84,20 @@ public class PauseManager : MonoBehaviour
 		Cursor.visible = toMenu;
 		SceneManager.LoadScene(level);
 	}
+
+    public void SaveGame()
+    {
+        GameSaveService.SaveCurrentGame(showNotification: true);
+    }
+
+    public void LoadSavedGame()
+    {
+        if (!GameSaveService.HasSaveFile()) return;
+        Time.timeScale = _savedTimeScale > 0f ? _savedTimeScale : MenuReturn.BaseTimeScale;
+        if (_pauseMenuCanvas != null) _pauseMenuCanvas.SetActive(false);
+        isPaused = false;
+        GameSaveService.LoadSavedGame();
+    }
 
     public void Exit()
     {

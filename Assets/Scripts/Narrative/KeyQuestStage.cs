@@ -15,7 +15,8 @@ namespace MoBA.Narrative
         TalkToSaya = 5,
         CollectGoods = 6,
         BringToSaya = 7,
-        Completed = 8
+        Completed = 8,
+        DinnerWithSaya = 9
     }
 
     /// <summary>

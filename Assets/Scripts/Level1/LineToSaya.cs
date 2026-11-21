@@ -157,18 +157,16 @@ public class LineToSaya : MonoBehaviour
 
     public void SetQuestTarget(GameObject newTarget, float deactivateDist = 2.5f)
     {
-        _questTargetActive = newTarget != null;
-        SetTarget(newTarget, deactivateDist);
-        if (_questTargetActive)
-        {
-            ActivateMarker(0.45f).Forget();
-        }
+        // Жёлтая стрелка разрешена исключительно при первом поиске висящей Саи.
+        // Для любых других квестов стрелка не активируется.
+        _questTargetActive = false;
+        DeactivateImmediate();
     }
 
     public void ClearQuestTarget(float fadeDuration = 0.5f)
     {
         _questTargetActive = false;
-        DeactivateLine(fadeDuration).Forget();
+        DeactivateImmediate();
     }
 
     private void LateUpdate()
@@ -368,7 +366,7 @@ public class LineToSaya : MonoBehaviour
 
     public void DeactivateImmediate()
     {
-        if (_questTargetActive) return;
+        _questTargetActive = false;
         _active = false;
         _arrowVisible = false;
         StopPulseLoop();

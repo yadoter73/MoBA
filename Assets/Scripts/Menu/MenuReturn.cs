@@ -28,6 +28,8 @@ public class MenuReturn : MonoBehaviour
 	public static bool CanContinue =>
 		_instance != null && _instance._suspendedScene.IsValid() && _instance._suspendedScene.isLoaded;
 
+	public static Scene SuspendedScene => _instance != null ? _instance._suspendedScene : default;
+
 	public static float BaseTimeScale { get; private set; } = 0.5f;
 
 	private ExamplePlayer _player;

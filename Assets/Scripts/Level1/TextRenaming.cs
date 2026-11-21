@@ -1,6 +1,7 @@
-using UnityEngine;
+using MoBA.Settings;
 using PrimeTween;
 using TMPro;
+using UnityEngine;
 
 public class TextRenaming : MonoBehaviour
 {
@@ -13,9 +14,28 @@ public class TextRenaming : MonoBehaviour
         if (_text == null) return;
 
         ConfigureTopCenterLayout();
+        _text.text = GameLocalization.TranslateAny(_text.text);
         _text.alpha = 0f;
         _text.gameObject.SetActive(true);
         TextAlpha();
+    }
+
+    private void OnEnable()
+    {
+        GameSettingsService.OnLanguageChanged += RefreshCurrentText;
+    }
+
+    private void OnDisable()
+    {
+        GameSettingsService.OnLanguageChanged -= RefreshCurrentText;
+    }
+
+    private void RefreshCurrentText()
+    {
+        if (_text != null && !string.IsNullOrEmpty(_text.text))
+        {
+            _text.text = GameLocalization.TranslateAny(_text.text);
+        }
     }
 
     private void ConfigureTopCenterLayout()
@@ -44,7 +64,7 @@ public class TextRenaming : MonoBehaviour
         ConfigureTopCenterLayout();
         _currentSequence.Stop();
         _text.gameObject.SetActive(true);
-        _text.text = "Найти Саю";
+        _text.text = GameLocalization.Get("Find Saya");
         _text.alpha = 0f;
 
         _currentSequence = Sequence.Create()
@@ -60,7 +80,7 @@ public class TextRenaming : MonoBehaviour
         ConfigureTopCenterLayout();
         _currentSequence.Stop();
         _text.gameObject.SetActive(true);
-        _text.text = objectiveText;
+        _text.text = GameLocalization.TranslateAny(objectiveText);
         _text.alpha = 0f;
 
         // Показываем надпись посередине сверху и удерживаем её видимой, пока игрок идёт за Саей
@@ -75,7 +95,7 @@ public class TextRenaming : MonoBehaviour
         ConfigureTopCenterLayout();
         _currentSequence.Stop();
         _text.gameObject.SetActive(true);
-        _text.text = objectiveText;
+        _text.text = GameLocalization.TranslateAny(objectiveText);
         _text.alpha = 0f;
 
         _currentSequence = Sequence.Create()

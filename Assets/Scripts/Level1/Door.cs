@@ -1,12 +1,13 @@
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using KinematicCharacterController;
 using KinematicCharacterController.Examples;
+using MoBA.Interaction;
 using MoBA.Narrative;
-using PrimeTween;
 using UnityEngine;
 using Zenject;
 
-public class Door : MonoBehaviour, IInteractable
+public class Door : MonoBehaviour, IInteractable, IMoverController
 {
     [SerializeField] private int _doorId;
     [SerializeField] private float _angle;
@@ -19,6 +20,17 @@ public class Door : MonoBehaviour, IInteractable
     private bool _isOpen = false;
 
     private float _startAngle;
+    private Vector3 _initialLocalPosition;
+    private Vector3 _baseEuler;
+    private Quaternion _currentWorldRotation;
+
+    private bool _segmentActive;
+    private float _segmentStartYaw;
+    private float _segmentEndYaw;
+    private float _segmentElapsed;
+    private float _segmentDuration;
+    private PhysicsMoverHelper.EaseType _segmentEase;
+    private UniTaskCompletionSource _segmentTcs;
 
     public bool IsOpen => _isOpen || IsVisuallyOpen();
 
@@ -29,13 +41,55 @@ public class Door : MonoBehaviour, IInteractable
         return diff > 25f;
     }
 
+    private void Awake()
+    {
+        _initialLocalPosition = transform.localPosition;
+        _baseEuler = transform.rotation.eulerAngles;
+        _startAngle = _baseEuler.y;
+        _currentWorldRotation = transform.rotation;
+        PhysicsMoverHelper.EnsurePhysicsMover(gameObject, this);
+    }
+
     private void Start()
     {
-        _startAngle = transform.rotation.eulerAngles.y;
         if (_requiresKey)
         {
             EnsureTallInteractHitbox();
         }
+    }
+
+    private void OnDestroy()
+    {
+        _segmentActive = false;
+        _segmentTcs?.TrySetCanceled();
+        _segmentTcs = null;
+    }
+
+    public void UpdateMovement(out Vector3 goalPosition, out Quaternion goalRotation, float deltaTime)
+    {
+        goalPosition = transform.parent != null
+            ? transform.parent.TransformPoint(_initialLocalPosition)
+            : _initialLocalPosition;
+
+        if (_segmentActive)
+        {
+            _segmentElapsed += deltaTime;
+            float t = _segmentDuration > 0.0001f ? Mathf.Clamp01(_segmentElapsed / _segmentDuration) : 1f;
+            float eased = PhysicsMoverHelper.EvaluateEase(t, _segmentEase);
+            float currentYaw = Mathf.LerpUnclamped(_segmentStartYaw, _segmentEndYaw, eased);
+            _currentWorldRotation = Quaternion.Euler(_baseEuler.x, currentYaw, _baseEuler.z);
+
+            if (t >= 1f)
+            {
+                _currentWorldRotation = Quaternion.Euler(_baseEuler.x, _segmentEndYaw, _baseEuler.z);
+                _segmentActive = false;
+                UniTaskCompletionSource tcs = _segmentTcs;
+                _segmentTcs = null;
+                tcs?.TrySetResult();
+            }
+        }
+
+        goalRotation = _currentWorldRotation;
     }
 
     /// <summary>
@@ -113,47 +167,73 @@ public class Door : MonoBehaviour, IInteractable
         if (isLocked)
         {
             _isAnimating = true;
+            try
+            {
+                float lockedTarget = Mathf.Abs(Mathf.DeltaAngle(_startAngle, _lockedAngle)) > 2f
+                    ? _lockedAngle
+                    : _startAngle + 13f;
 
-            float lockedTarget = Mathf.Abs(Mathf.DeltaAngle(_startAngle, _lockedAngle)) > 2f
-                ? _lockedAngle
-                : _startAngle + 13f;
-
-            Vector3 targetRotation1 = new(transform.rotation.eulerAngles.x, lockedTarget, transform.rotation.eulerAngles.z);
-            Vector3 targetRotation2 = new(transform.rotation.eulerAngles.x, _startAngle, transform.rotation.eulerAngles.z);
-
-            await Tween.Rotation(transform, endValue: targetRotation1, duration: 0.3f, ease: Ease.InOutBack).ToUniTask(cancellationToken: destroyToken);
-            await Tween.Rotation(transform, endValue: targetRotation2, duration: 0.3f, ease: Ease.InOutBack).ToUniTask(cancellationToken: destroyToken);
-
-            _isAnimating = false;
+                await AnimateYawAsync(lockedTarget, 0.3f, PhysicsMoverHelper.EaseType.InOutSine, destroyToken);
+                await AnimateYawAsync(_startAngle, 0.3f, PhysicsMoverHelper.EaseType.InOutSine, destroyToken);
+            }
+            finally
+            {
+                _isAnimating = false;
+            }
             return;
         }
 
         bool currentlyOpen = IsOpen;
-
-        if (!currentlyOpen)
+        _isAnimating = true;
+        try
         {
-            _isAnimating = true;
-            if (_requiresKey)
+            if (!currentlyOpen)
             {
-                _questService?.NotifyGateOpened();
+                if (_requiresKey)
+                {
+                    _questService?.NotifyGateOpened();
+                }
+
+                float targetAngle = GetTargetOpenAngle();
+                await AnimateYawAsync(targetAngle, 0.67f, PhysicsMoverHelper.EaseType.InOutSine, destroyToken);
+                _isOpen = true;
             }
-
-            float targetAngle = GetTargetOpenAngle();
-            Vector3 targetRotation = new(transform.rotation.eulerAngles.x, targetAngle, transform.rotation.eulerAngles.z);
-            await Tween.Rotation(transform, endValue: targetRotation, duration: 0.67f, ease: Ease.InOutBack).ToUniTask(cancellationToken: destroyToken);
-            _isOpen = true;
-
+            else
+            {
+                await AnimateYawAsync(_startAngle, 0.85f, PhysicsMoverHelper.EaseType.InOutSine, destroyToken);
+                _isOpen = false;
+            }
+        }
+        finally
+        {
             _isAnimating = false;
         }
-        else
+    }
+
+    private async UniTask AnimateYawAsync(float targetYaw, float duration, PhysicsMoverHelper.EaseType ease, CancellationToken token)
+    {
+        _segmentTcs?.TrySetCanceled();
+
+        float startYaw = _currentWorldRotation.eulerAngles.y;
+        float delta = Mathf.DeltaAngle(startYaw, targetYaw);
+        _segmentStartYaw = startYaw;
+        _segmentEndYaw = startYaw + delta;
+        _segmentDuration = duration;
+        _segmentElapsed = 0f;
+        _segmentEase = ease;
+
+        UniTaskCompletionSource tcs = new UniTaskCompletionSource();
+        _segmentTcs = tcs;
+        _segmentActive = true;
+
+        using (token.Register(() =>
         {
-            _isAnimating = true;
-
-            Vector3 targetRotation = new(transform.rotation.eulerAngles.x, _startAngle, transform.rotation.eulerAngles.z);
-            await Tween.Rotation(transform, endValue: targetRotation, duration: 0.85f, ease: Ease.InOutSine).ToUniTask(cancellationToken: destroyToken);
-            _isOpen = false;
-
-            _isAnimating = false;
+            _segmentActive = false;
+            if (_segmentTcs == tcs) _segmentTcs = null;
+            tcs.TrySetCanceled(token);
+        }))
+        {
+            await tcs.Task;
         }
     }
 }

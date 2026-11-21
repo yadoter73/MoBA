@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using MoBA.SaveSystem;
+using MoBA.Settings;
 using PrimeTween;
 using TMPro;
 using Unity.Cinemachine;
@@ -63,11 +65,16 @@ public class MainMenuController : MonoBehaviour
 	private CanvasGroup _fade;
 	private CanvasGroup _currentPanel;
 	private CanvasGroup _chaptersPanel;
+	private CanvasGroup _settingsPanel;
 	private CanvasGroup _controlsPanel;
+	private CanvasGroup _controlsReturnPanel;
 	private Image _pulse;
 	private TextMeshProUGUI _titleText;
 	private TextMeshProUGUI _titleGhost;
 	private TextMeshProUGUI _whisper;
+	private TextMeshProUGUI _languageValueLabel;
+	private TextMeshProUGUI _sensitivityValueText;
+	private Slider _sensitivitySlider;
 	private AudioSource _audio;
 	private InputAction _cancelAction;
 	private Light _hospitalLamp;
@@ -79,10 +86,13 @@ public class MainMenuController : MonoBehaviour
 	private CinemachinePositionComposer _vrComposer;
 	private CinemachineInputAxisController _vrAxisController;
 	private Button _continueButton;
+	private Button _saveGameButton;
+	private Button _loadGameButton;
 	private Button _newGameButton;
 	private Button _chaptersButton;
-	private Button _controlsButton;
+	private Button _settingsButton;
 	private readonly List<Button> _mainButtons = new();
+	private readonly List<(TextMeshProUGUI label, string englishKey)> _localizedTexts = new();
 	private readonly List<Texture2D> _generated = new();
 
 	private float _nextWhisper;
@@ -136,6 +146,7 @@ public class MainMenuController : MonoBehaviour
 			_cancelAction.Enable();
 			_cancelAction.started += OnCancel;
 		}
+		GameSettingsService.OnLanguageChanged += RefreshLocalizedTexts;
 		EnsureMenuCinemachineLook();
 	}
 
@@ -259,6 +270,7 @@ public class MainMenuController : MonoBehaviour
 	private void OnDisable()
 	{
 		if (_cancelAction != null) _cancelAction.started -= OnCancel;
+		GameSettingsService.OnLanguageChanged -= RefreshLocalizedTexts;
 	}
 
 	private void OnDestroy()
@@ -356,7 +368,7 @@ public class MainMenuController : MonoBehaviour
 		_mainGroup = main.gameObject.AddComponent<CanvasGroup>();
 
 		// Тематический маркер дела поверх заголовка (атмосфера больницы и расследования)
-		var caseTag = CreateText("CaseTag", main, "PATIENT RECORD // 04 — SAYA", 18, new Color(0.62f, 0.22f, 0.20f, 0.85f), TextAlignmentOptions.Left);
+		var caseTag = RegisterLocalized(CreateText("CaseTag", main, GameLocalization.Get("PATIENT RECORD // 04 — SAYA"), 18, new Color(0.62f, 0.22f, 0.20f, 0.85f), TextAlignmentOptions.Left), "PATIENT RECORD // 04 — SAYA");
 		Place(caseTag.rectTransform, new Vector2(158, 362), new Vector2(720, 32));
 		caseTag.characterSpacing = 12f;
 
@@ -374,29 +386,49 @@ public class MainMenuController : MonoBehaviour
 		Place(line.rectTransform, new Vector2(156, 140), new Vector2(460, 2));
 		line.rectTransform.pivot = new Vector2(0f, 0.5f);
 
-		var subtitle = CreateText("Subtitle", main, _subtitle, 34, _dimColor, TextAlignmentOptions.Left);
+		var subtitle = RegisterLocalized(CreateText("Subtitle", main, GameLocalization.Get(_subtitle), 34, _dimColor, TextAlignmentOptions.Left), _subtitle);
 		Place(subtitle.rectTransform, new Vector2(158, 100), new Vector2(900, 50));
 		subtitle.characterSpacing = 14f;
 
 		// Кнопки
 		bool canContinue = MenuReturn.CanContinue;
-		_continueButton = CreateMenuButton(main, "CONTINUE", new Vector2(150, 10), ContinueGame, 52f);
-		ConfigureContinueButton(_continueButton, canContinue);
+		bool hasSave = GameSaveService.HasSaveFile();
+		var interactableButtons = new List<Button>();
+
+		_continueButton = CreateMenuButton(main, "CONTINUE", new Vector2(150, 32), ContinueGame, 48f);
+		ConfigureOptionalButton(_continueButton, canContinue);
 		_mainButtons.Add(_continueButton);
+		if (canContinue) interactableButtons.Add(_continueButton);
 
-		_newGameButton = CreateMenuButton(main, "NEW GAME", new Vector2(150, -64), () => LoadScene(_newGameScene), 52f);
+		_saveGameButton = CreateMenuButton(main, "SAVE GAME", new Vector2(150, -30), SaveCurrentGame, 48f);
+		ConfigureOptionalButton(_saveGameButton, canContinue);
+		_mainButtons.Add(_saveGameButton);
+		if (canContinue) interactableButtons.Add(_saveGameButton);
+
+		_loadGameButton = CreateMenuButton(main, "LOAD GAME", new Vector2(150, -92), LoadSavedGame, 48f);
+		ConfigureOptionalButton(_loadGameButton, hasSave);
+		_mainButtons.Add(_loadGameButton);
+		if (hasSave) interactableButtons.Add(_loadGameButton);
+
+		_newGameButton = CreateMenuButton(main, "NEW GAME", new Vector2(150, -154), () => LoadScene(_newGameScene), 48f);
 		_mainButtons.Add(_newGameButton);
+		interactableButtons.Add(_newGameButton);
 
-		_chaptersButton = CreateMenuButton(main, "CHAPTERS", new Vector2(150, -138), () => OpenPanel(_chaptersPanel), 52f);
+		_chaptersButton = CreateMenuButton(main, "CHAPTERS", new Vector2(150, -216), () => OpenPanel(_chaptersPanel), 48f);
 		_mainButtons.Add(_chaptersButton);
+		interactableButtons.Add(_chaptersButton);
 
-		_controlsButton = CreateMenuButton(main, "CONTROLS", new Vector2(150, -212), () => OpenPanel(_controlsPanel), 52f);
-		_mainButtons.Add(_controlsButton);
+		_settingsButton = CreateMenuButton(main, "SETTINGS", new Vector2(150, -278), () => OpenPanel(_settingsPanel), 48f);
+		_mainButtons.Add(_settingsButton);
+		interactableButtons.Add(_settingsButton);
 
-		_mainButtons.Add(CreateMenuButton(main, "QUIT", new Vector2(150, -286), Quit, 52f));
-		LinkVertical(canContinue ? _mainButtons : _mainButtons.GetRange(1, _mainButtons.Count - 1));
+		var quitBtn = CreateMenuButton(main, "QUIT", new Vector2(150, -340), Quit, 48f);
+		_mainButtons.Add(quitBtn);
+		interactableButtons.Add(quitBtn);
 
-		var hint = CreateText("Hint", main, "headphones recommended. play in the dark.", 22, new Color(0.45f, 0.43f, 0.42f, 1f), TextAlignmentOptions.BottomLeft);
+		LinkVertical(interactableButtons);
+
+		var hint = RegisterLocalized(CreateText("Hint", main, GameLocalization.Get("headphones recommended. play in the dark."), 22, new Color(0.45f, 0.43f, 0.42f, 1f), TextAlignmentOptions.BottomLeft), "headphones recommended. play in the dark.");
 		hint.rectTransform.anchorMin = hint.rectTransform.anchorMax = new Vector2(0, 0);
 		hint.rectTransform.pivot = new Vector2(0, 0);
 		hint.rectTransform.anchoredPosition = new Vector2(156, 56);
@@ -411,6 +443,7 @@ public class MainMenuController : MonoBehaviour
 
 		// --- панели
 		_chaptersPanel = BuildChaptersPanel();
+		_settingsPanel = BuildSettingsPanel();
 		_controlsPanel = BuildControlsPanel();
 
 		// --- затемнение поверх всего
@@ -431,7 +464,7 @@ public class MainMenuController : MonoBehaviour
 			float y = -i * 150f;
 			var btn = CreateMenuButton(body, ch.Title, new Vector2(0, y), () => LoadScene(ch.Scene), 46, true);
 			buttons.Add(btn);
-			var desc = CreateText("Desc", body, ch.Description, 24, _dimColor, TextAlignmentOptions.TopLeft);
+			var desc = RegisterLocalized(CreateText("Desc", body, GameLocalization.Get(ch.Description), 24, _dimColor, TextAlignmentOptions.TopLeft), ch.Description);
 			Place(desc.rectTransform, new Vector2(52, y - 52), new Vector2(760, 40), true);
 			desc.characterSpacing = 4f;
 		}
@@ -439,6 +472,103 @@ public class MainMenuController : MonoBehaviour
 		LinkVertical(buttons);
 		panel.gameObject.SetActive(false);
 		return panel;
+	}
+
+	private CanvasGroup BuildSettingsPanel()
+	{
+		var panel = CreatePanel("SettingsPanel", "SETTINGS", out var body);
+
+		var controlsBtn = CreateMenuButton(body, "CONTROLS", new Vector2(0, 0), OpenControlsFromSettings, 44f, true);
+
+		var sensLabel = RegisterLocalized(
+			CreateText("SensitivityLabel", body, GameLocalization.Get("SENSITIVITY"), 32f, _boneColor, TextAlignmentOptions.Left),
+			"SENSITIVITY");
+		Place(sensLabel.rectTransform, new Vector2(0, -110f), new Vector2(460, 48f), true);
+		sensLabel.characterSpacing = 12f;
+
+		_sensitivityValueText = CreateText(
+			"SensitivityValue",
+			body,
+			GameSettingsService.MouseSensitivity.ToString("0.00"),
+			30f,
+			_dimColor,
+			TextAlignmentOptions.Right);
+		Place(_sensitivityValueText.rectTransform, new Vector2(480f, -110f), new Vector2(220f, 48f), true);
+		_sensitivityValueText.characterSpacing = 6f;
+
+		_sensitivitySlider = BuildSensitivitySlider(body, new Vector2(0, -172f));
+
+		var langHeader = RegisterLocalized(
+			CreateText("LanguageHeader", body, GameLocalization.Get("LANGUAGE"), 24f, _dimColor, TextAlignmentOptions.Left),
+			"LANGUAGE");
+		Place(langHeader.rectTransform, new Vector2(0, -255f), new Vector2(400f, 36f), true);
+		langHeader.characterSpacing = 10f;
+
+		var langBtn = CreateMenuButton(body, GetLanguageDisplayText(), new Vector2(0, -296f), ToggleLanguage, 42f, true, registerLocalization: false);
+		_languageValueLabel = langBtn.GetComponentInChildren<TextMeshProUGUI>(true);
+
+		var backBtn = CreateMenuButton(body, "BACK", new Vector2(0, -430f), ClosePanel, 36f, true);
+		LinkVertical(new List<Button> { controlsBtn, langBtn, backBtn });
+		panel.gameObject.SetActive(false);
+		return panel;
+	}
+
+	private Slider BuildSensitivitySlider(RectTransform parent, Vector2 pos)
+	{
+		var sliderRect = CreateRect("SensitivitySlider", parent);
+		Place(sliderRect, pos, new Vector2(700f, 44f), true);
+
+		// Прозрачная зона клика/перетаскивания по всей ширине слайдера (CreateImage ставит raycastTarget = false)
+		var hitArea = sliderRect.gameObject.AddComponent<Image>();
+		hitArea.color = new Color(0f, 0f, 0f, 0f);
+		hitArea.raycastTarget = true;
+
+		var bg = CreateImage("Background", sliderRect, new Color(0.18f, 0.14f, 0.14f, 0.9f));
+		bg.raycastTarget = true;
+		var bgRt = bg.rectTransform;
+		bgRt.anchorMin = new Vector2(0f, 0.5f);
+		bgRt.anchorMax = new Vector2(1f, 0.5f);
+		bgRt.pivot = new Vector2(0.5f, 0.5f);
+		bgRt.sizeDelta = new Vector2(0f, 8f);
+		bgRt.anchoredPosition = Vector2.zero;
+
+		var fillArea = CreateRect("Fill Area", sliderRect);
+		fillArea.anchorMin = new Vector2(0f, 0.5f);
+		fillArea.anchorMax = new Vector2(1f, 0.5f);
+		fillArea.pivot = new Vector2(0.5f, 0.5f);
+		fillArea.sizeDelta = new Vector2(0f, 8f);
+		fillArea.anchoredPosition = Vector2.zero;
+
+		var fill = CreateImage("Fill", fillArea, _bloodColor);
+		Stretch(fill.rectTransform);
+
+		var handleArea = CreateRect("Handle Slide Area", sliderRect);
+		Stretch(handleArea);
+
+		var handle = CreateImage("Handle", handleArea, _boneColor);
+		handle.raycastTarget = true;
+		handle.rectTransform.anchoredPosition = Vector2.zero;
+		handle.rectTransform.sizeDelta = new Vector2(18f, 32f);
+
+		var slider = sliderRect.gameObject.AddComponent<Slider>();
+		slider.interactable = true;
+		slider.minValue = GameSettingsService.MinSensitivity;
+		slider.maxValue = GameSettingsService.MaxSensitivity;
+		slider.wholeNumbers = false;
+		slider.fillRect = fill.rectTransform;
+		slider.handleRect = handle.rectTransform;
+		slider.targetGraphic = handle;
+		slider.direction = Slider.Direction.LeftToRight;
+		slider.SetValueWithoutNotify(GameSettingsService.MouseSensitivity);
+		slider.onValueChanged.AddListener(v =>
+		{
+			GameSettingsService.MouseSensitivity = v;
+			if (_sensitivityValueText != null)
+			{
+				_sensitivityValueText.text = GameSettingsService.MouseSensitivity.ToString("0.00");
+			}
+		});
+		return slider;
 	}
 
 	private CanvasGroup BuildControlsPanel()
@@ -458,10 +588,10 @@ public class MainMenuController : MonoBehaviour
 		for (int i = 0; i < rows.GetLength(0); i++)
 		{
 			float y = -i * 58f;
-			var key = CreateText("Key", body, rows[i, 0], 32, _boneColor, TextAlignmentOptions.Left);
+			var key = RegisterLocalized(CreateText("Key", body, GameLocalization.Get(rows[i, 0]), 32, _boneColor, TextAlignmentOptions.Left), rows[i, 0]);
 			Place(key.rectTransform, new Vector2(0, y), new Vector2(260, 50), true);
 			key.characterSpacing = 10f;
-			var action = CreateText("Action", body, rows[i, 1], 30, _dimColor, TextAlignmentOptions.Left);
+			var action = RegisterLocalized(CreateText("Action", body, GameLocalization.Get(rows[i, 1]), 30, _dimColor, TextAlignmentOptions.Left), rows[i, 1]);
 			Place(action.rectTransform, new Vector2(280, y), new Vector2(500, 50), true);
 			action.characterSpacing = 6f;
 		}
@@ -496,7 +626,7 @@ public class MainMenuController : MonoBehaviour
 		edge.rectTransform.sizeDelta = new Vector2(4, 0);
 		edge.rectTransform.anchoredPosition = Vector2.zero;
 
-		var title = CreateText("Header", frame, header, 64, _boneColor, TextAlignmentOptions.TopLeft);
+		var title = RegisterLocalized(CreateText("Header", frame, GameLocalization.Get(header), 64, _boneColor, TextAlignmentOptions.TopLeft), header);
 		Place(title.rectTransform, new Vector2(60, -50), new Vector2(780, 80), true);
 		title.characterSpacing = 24f;
 
@@ -511,7 +641,7 @@ public class MainMenuController : MonoBehaviour
 		return group;
 	}
 
-	private Button CreateMenuButton(RectTransform parent, string text, Vector2 pos, Action onClick, float size = 54f, bool topAnchored = false)
+	private Button CreateMenuButton(RectTransform parent, string text, Vector2 pos, Action onClick, float size = 54f, bool topAnchored = false, bool registerLocalization = true)
 	{
 		var rect = CreateRect("Button_" + text.Trim(), parent);
 		Place(rect, pos, new Vector2(760, size + 24f), topAnchored);
@@ -528,7 +658,9 @@ public class MainMenuController : MonoBehaviour
 		mrt.sizeDelta = new Vector2(40, 3);
 		mrt.localScale = new Vector3(0f, 1f, 1f);
 
-		var label = CreateText("Label", rect, text, size, _boneColor, TextAlignmentOptions.Left);
+		string display = registerLocalization ? GameLocalization.Get(text) : text;
+		var label = CreateText("Label", rect, display, size, _boneColor, TextAlignmentOptions.Left);
+		if (registerLocalization) RegisterLocalized(label, text);
 		Stretch(label.rectTransform);
 		label.characterSpacing = 16f;
 		label.raycastTarget = false;
@@ -594,7 +726,8 @@ public class MainMenuController : MonoBehaviour
 	private void Whisper()
 	{
 		_nextWhisper = Time.unscaledTime + Random.Range(8f, 15f);
-		_whisper.text = Whispers[Random.Range(0, Whispers.Length)];
+		string[] whispers = GameLocalization.GetWhispers();
+		_whisper.text = whispers[Random.Range(0, whispers.Length)];
 		// Справа в спокойной зоне, чтобы не перекрывать диораму и текст меню.
 		_whisper.rectTransform.anchoredPosition = new Vector2(Random.Range(180f, 620f), Random.Range(-340f, 340f));
 		Tween.StopAll(_whisper);
@@ -602,6 +735,59 @@ public class MainMenuController : MonoBehaviour
 			.Chain(Tween.Custom(0f, 0.24f, 1.4f, a => _whisper.alpha = a, Ease.InOutSine, useUnscaledTime: true))
 			.ChainDelay(2.0f)
 			.Chain(Tween.Custom(0.24f, 0f, 2.0f, a => _whisper.alpha = a, Ease.InOutSine, useUnscaledTime: true));
+	}
+
+	private void OpenControlsFromSettings()
+	{
+		if (_controlsPanel == null) return;
+		if (_currentPanel != null)
+		{
+			var prev = _currentPanel;
+			prev.interactable = false;
+			prev.blocksRaycasts = false;
+			prev.gameObject.SetActive(false);
+			_currentPanel = null;
+			_controlsReturnPanel = prev;
+		}
+		OpenPanel(_controlsPanel);
+	}
+
+	private void ToggleLanguage()
+	{
+		GameSettingsService.Language = GameSettingsService.Language == GameLanguage.English
+			? GameLanguage.Russian
+			: GameLanguage.English;
+	}
+
+	private static string GetLanguageDisplayText()
+	{
+		return GameSettingsService.Language == GameLanguage.Russian ? "РУССКИЙ" : "ENGLISH";
+	}
+
+	private TextMeshProUGUI RegisterLocalized(TextMeshProUGUI label, string englishKey)
+	{
+		if (label != null && !string.IsNullOrEmpty(englishKey))
+		{
+			_localizedTexts.Add((label, englishKey));
+		}
+		return label;
+	}
+
+	private void RefreshLocalizedTexts()
+	{
+		for (int i = 0; i < _localizedTexts.Count; i++)
+		{
+			var entry = _localizedTexts[i];
+			if (entry.label != null)
+			{
+				entry.label.text = GameLocalization.Get(entry.englishKey);
+			}
+		}
+
+		if (_languageValueLabel != null)
+		{
+			_languageValueLabel.text = GetLanguageDisplayText();
+		}
 	}
 
 	private void OpenPanel(CanvasGroup panel)
@@ -618,7 +804,7 @@ public class MainMenuController : MonoBehaviour
 		frame.anchoredPosition = new Vector2(-80, 0);
 		Tween.Alpha(panel, 1f, 0.35f, Ease.OutQuad, useUnscaledTime: true);
 		Tween.UIAnchoredPositionX(frame, -140f, 0.45f, Ease.OutCubic, useUnscaledTime: true);
-		Tween.Alpha(_mainGroup, 0.25f, 0.35f, Ease.OutQuad, useUnscaledTime: true);
+		Tween.Alpha(_mainGroup, 0f, 0.25f, Ease.OutQuad, useUnscaledTime: true);
 
 		var first = panel.GetComponentInChildren<Button>();
 		if (first != null) Select(first);
@@ -631,12 +817,21 @@ public class MainMenuController : MonoBehaviour
 		_currentPanel = null;
 		panel.interactable = false;
 		panel.blocksRaycasts = false;
-		_mainGroup.interactable = true;
 
 		Tween.Alpha(panel, 0f, 0.25f, Ease.InQuad, useUnscaledTime: true)
 			.OnComplete(() => panel.gameObject.SetActive(false));
+
+		if (panel == _controlsPanel && _controlsReturnPanel != null)
+		{
+			var returnTo = _controlsReturnPanel;
+			_controlsReturnPanel = null;
+			OpenPanel(returnTo);
+			return;
+		}
+
+		_mainGroup.interactable = true;
 		Tween.Alpha(_mainGroup, 1f, 0.3f, Ease.OutQuad, useUnscaledTime: true);
-		Select(panel == _chaptersPanel ? _chaptersButton : _controlsButton);
+		Select(panel == _chaptersPanel ? _chaptersButton : _settingsButton);
 	}
 
 	private void OnCancel(InputAction.CallbackContext ctx)
@@ -658,16 +853,47 @@ public class MainMenuController : MonoBehaviour
 		seq.ChainCallback(MenuReturn.ContinueSuspendedGame);
 	}
 
-	private void ConfigureContinueButton(Button btn, bool canContinue)
+	private void SaveCurrentGame()
 	{
-		if (canContinue) return;
-		btn.interactable = false;
-		btn.navigation = new Navigation { mode = Navigation.Mode.None };
-		if (btn.TryGetComponent(out HorrorMenuButton horror))
+		if (_busy || !MenuReturn.CanContinue) return;
+		if (GameSaveService.SaveCurrentGame(showNotification: true) && _loadGameButton != null)
 		{
-			Color disabledColor = new Color(_dimColor.r * 0.48f, _dimColor.g * 0.48f, _dimColor.b * 0.48f, 0.55f);
-			horror.NormalColor = disabledColor;
-			if (horror.Label != null) horror.Label.color = disabledColor;
+			ConfigureOptionalButton(_loadGameButton, true);
+		}
+	}
+
+	private void LoadSavedGame()
+	{
+		if (_busy || !GameSaveService.HasSaveFile()) return;
+		_busy = true;
+		if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
+		_fade.blocksRaycasts = true;
+
+		var seq = Sequence.Create(useUnscaledTime: true)
+			.Chain(Tween.Alpha(_fade, 1f, 0.45f, Ease.InQuad, useUnscaledTime: true));
+		if (_audio.isPlaying && _audio.loop)
+			seq.Group(Tween.AudioVolume(_audio, 0f, 0.45f, useUnscaledTime: true));
+		seq.ChainCallback(() => GameSaveService.LoadSavedGame());
+	}
+
+	private void ConfigureOptionalButton(Button btn, bool enabled)
+	{
+		if (btn == null) return;
+		btn.interactable = enabled;
+		if (!enabled)
+		{
+			btn.navigation = new Navigation { mode = Navigation.Mode.None };
+			if (btn.TryGetComponent(out HorrorMenuButton horror))
+			{
+				Color disabledColor = new Color(_dimColor.r * 0.48f, _dimColor.g * 0.48f, _dimColor.b * 0.48f, 0.55f);
+				horror.NormalColor = disabledColor;
+				if (horror.Label != null) horror.Label.color = disabledColor;
+			}
+		}
+		else if (btn.TryGetComponent(out HorrorMenuButton horror))
+		{
+			horror.NormalColor = _boneColor;
+			if (horror.Label != null) horror.Label.color = _boneColor;
 		}
 	}
 

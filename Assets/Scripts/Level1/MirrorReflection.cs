@@ -43,6 +43,10 @@ public class MirrorReflection : MonoBehaviour
 
     private Vector3 LocalCenter => (_localBottomLeft + _localTopRight) * 0.5f;
 
+    public Vector3 WorldCenter => transform.TransformPoint(LocalCenter);
+    public Vector3 WorldNormal => transform.TransformDirection(_localNormal).normalized;
+    public bool IsMirrorRendering => _mirrorCamera != null && _mirrorCamera.enabled;
+
     private void OnEnable()
     {
         BuildMirrorObjects();

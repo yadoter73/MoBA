@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace DialogueEditor
@@ -19,7 +21,7 @@ namespace DialogueEditor
             NONE,
         }
 
-        private const float TRANSITION_TIME = 0.2f; // Transition time for fades
+        private const float TRANSITION_TIME = 0.11f; // Transition time for fades
 
         public static ConversationManager Instance { get; private set; }
 
@@ -72,6 +74,7 @@ namespace DialogueEditor
         public int m_targetScrollTextCount;
         private eState m_state;
         private float m_stateTime;
+        private float _speechStartUnscaledTime;
         
         private Conversation m_conversation;
         private SpeechNode m_currentSpeech;
@@ -109,6 +112,8 @@ namespace DialogueEditor
 
         private void Update()
         {
+            TryHandleLeftClickAdvance();
+
             switch (m_state)
             {
                 case eState.TransitioningDialogueBoxOn:
@@ -139,13 +144,45 @@ namespace DialogueEditor
 
 
 
+        private void TryHandleLeftClickAdvance()
+        {
+            if (m_currentSpeech == null) return;
+            if (m_currentSpeech.ConnectionType == Connection.eConnectionType.Option && HasAnyValidOption(m_currentSpeech)) return;
+            if (m_state != eState.ScrollingText && m_state != eState.TransitioningOptionsOn && m_state != eState.Idle) return;
+            if (Time.unscaledTime - _speechStartUnscaledTime < 0.12f) return;
+
+            if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+            {
+                if (DialogueText != null && m_targetScrollTextCount > 0)
+                {
+                    DialogueText.maxVisibleCharacters = m_targetScrollTextCount;
+                    m_scrollIndex = m_targetScrollTextCount;
+                }
+                m_currentSpeech.AutomaticallyAdvance = true;
+                SetState(eState.TransitioningOptionsOff);
+            }
+        }
+
         //--------------------------------------
         // Public functions
         //--------------------------------------
 
         public void StartConversation(NPCConversation conversation)
         {
+            if (conversation == null)
+            {
+                EndConversation();
+                return;
+            }
+
             m_conversation = conversation.Deserialize();
+            if (m_conversation == null || m_conversation.Root == null)
+            {
+                EndConversation();
+                return;
+            }
+            MoBA.Settings.GameLocalization.TranslateConversation(m_conversation);
+
             if (OnConversationStarted != null)
                 OnConversationStarted.Invoke();
 
@@ -284,6 +321,11 @@ namespace DialogueEditor
             {
                 case eState.TransitioningDialogueBoxOn:
                     {
+                        if (m_currentSpeech == null)
+                        {
+                            EndConversation();
+                            return;
+                        }
                         SetColorAlpha(DialogueBackground, 0);
                         SetColorAlpha(NpcIcon, 0);
                         SetColorAlpha(NameText, 0);
@@ -324,7 +366,13 @@ namespace DialogueEditor
 
         private void TransitioningDialogueBoxOn_Update()
         {
-            m_stateTime += Time.deltaTime;
+            if (m_currentSpeech == null)
+            {
+                EndConversation();
+                return;
+            }
+
+            m_stateTime += Time.unscaledDeltaTime;
             float t = m_stateTime / TRANSITION_TIME;
 
             if (t > 1)
@@ -340,30 +388,28 @@ namespace DialogueEditor
 
         private void ScrollingText_Update()
         {
-            const float charactersPerSecond = 1500;
-            float timePerChar = (60.0f / charactersPerSecond);
-            timePerChar *= ScrollSpeed;
+            const float charactersPerSecond = 3600;
+            float timePerChar = Mathf.Max(0.002f, (60.0f / charactersPerSecond) * Mathf.Max(0.15f, ScrollSpeed));
 
-            m_elapsedScrollTime += Time.deltaTime;
+            m_elapsedScrollTime += Time.unscaledDeltaTime;
 
-            if (m_elapsedScrollTime > timePerChar)
+            while (m_elapsedScrollTime >= timePerChar && m_scrollIndex < m_targetScrollTextCount)
             {
-                m_elapsedScrollTime = 0f;
-
+                m_elapsedScrollTime -= timePerChar;
                 DialogueText.maxVisibleCharacters = m_scrollIndex;
                 m_scrollIndex++;
+            }
 
-                // Finished?
-                if (m_scrollIndex >= m_targetScrollTextCount)
-                {
-                    SetState(eState.TransitioningOptionsOn);
-                }
+            if (m_scrollIndex >= m_targetScrollTextCount)
+            {
+                DialogueText.maxVisibleCharacters = m_targetScrollTextCount;
+                SetState(eState.TransitioningOptionsOn);
             }
         }
 
         private void TransitionOptionsOn_Update()
         {
-            m_stateTime += Time.deltaTime;
+            m_stateTime += Time.unscaledDeltaTime;
             float t = m_stateTime / TRANSITION_TIME;
 
             if (t > 1)
@@ -378,28 +424,41 @@ namespace DialogueEditor
 
         private void Idle_Update()
         {
-            m_stateTime += Time.deltaTime;
+            if (m_currentSpeech == null)
+            {
+                EndConversation();
+                return;
+            }
+
+            m_stateTime += Time.unscaledDeltaTime;
 
             if (m_currentSpeech.AutomaticallyAdvance)
             {
-                if (m_currentSpeech.ConnectionType == Connection.eConnectionType.None || m_currentSpeech.ConnectionType == Connection.eConnectionType.Speech)
+                bool isNonOptionOrEmptyOption = m_currentSpeech.ConnectionType == Connection.eConnectionType.None
+                    || m_currentSpeech.ConnectionType == Connection.eConnectionType.Speech
+                    || (m_currentSpeech.ConnectionType == Connection.eConnectionType.Option && !HasAnyValidOption(m_currentSpeech));
+
+                if (isNonOptionOrEmptyOption && m_stateTime > m_currentSpeech.TimeUntilAdvance)
                 {
-                    if (m_stateTime > m_currentSpeech.TimeUntilAdvance)
-                    {
-                        SetState(eState.TransitioningOptionsOff);
-                    }
+                    SetState(eState.TransitioningOptionsOff);
                 }
             }
         }
 
         private void TransitionOptionsOff_Update()
         {
-            m_stateTime += Time.deltaTime;
+            m_stateTime += Time.unscaledDeltaTime;
             float t = m_stateTime / TRANSITION_TIME;
 
             if (t > 1)
             {
                 ClearOptions();
+
+                if (m_currentSpeech == null)
+                {
+                    EndConversation();
+                    return;
+                }
 
                 if (m_currentSpeech.AutomaticallyAdvance)
                 {
@@ -434,7 +493,7 @@ namespace DialogueEditor
 
         private void TransitioningDialogueBoxOff_Update()
         {
-            m_stateTime += Time.deltaTime;
+            m_stateTime += Time.unscaledDeltaTime;
             float t = m_stateTime / TRANSITION_TIME;
 
             if (t > 1)
@@ -464,14 +523,30 @@ namespace DialogueEditor
             }
 
             m_currentSpeech = speech;
+            m_selectedOption = null;
+            _speechStartUnscaledTime = Time.unscaledTime;
 
-            // Защита от зависания на последней реплике (без выходов/опций), если в ассете забыт AutomaticallyAdvance
-            if (m_currentSpeech.ConnectionType == Connection.eConnectionType.None && !m_currentSpeech.AutomaticallyAdvance)
+            // В Level1 каждая обычная реплика автоматически переходит к следующей (или закрывает диалог) через 5 секунд,
+            // если игрок не пропустил её раньше кликом ЛКМ.
+            bool isNonOptionOrEmptyOption = m_currentSpeech.ConnectionType == Connection.eConnectionType.None
+                || m_currentSpeech.ConnectionType == Connection.eConnectionType.Speech
+                || (m_currentSpeech.ConnectionType == Connection.eConnectionType.Option && !HasAnyValidOption(m_currentSpeech));
+
+            if (isNonOptionOrEmptyOption)
             {
-                m_currentSpeech.AutomaticallyAdvance = true;
-                if (m_currentSpeech.TimeUntilAdvance <= 0f)
+                bool isLevel1 = string.Equals(SceneManager.GetActiveScene().name, "Level1", System.StringComparison.OrdinalIgnoreCase);
+                if (isLevel1)
                 {
-                    m_currentSpeech.TimeUntilAdvance = 1.8f;
+                    m_currentSpeech.AutomaticallyAdvance = true;
+                    m_currentSpeech.TimeUntilAdvance = 5.0f;
+                }
+                else if (m_currentSpeech.ConnectionType != Connection.eConnectionType.Speech && !m_currentSpeech.AutomaticallyAdvance)
+                {
+                    m_currentSpeech.AutomaticallyAdvance = true;
+                    if (m_currentSpeech.TimeUntilAdvance <= 0f)
+                    {
+                        m_currentSpeech.TimeUntilAdvance = 2.0f;
+                    }
                 }
             }
 
@@ -604,11 +679,28 @@ namespace DialogueEditor
                     SetupSpeech(next);
                     return true;
                 }
+
+                EndConversation();
+                return true;
             }
-            else if (m_currentSpeech.ConnectionType == Connection.eConnectionType.None)
+            else if (m_currentSpeech.ConnectionType == Connection.eConnectionType.None
+                || (m_currentSpeech.ConnectionType == Connection.eConnectionType.Option && !HasAnyValidOption(m_currentSpeech)))
             {
                 EndConversation();
                 return true;
+            }
+            return false;
+        }
+
+        private bool HasAnyValidOption(SpeechNode speech)
+        {
+            if (speech == null || speech.Connections == null) return false;
+            for (int i = 0; i < speech.Connections.Count; i++)
+            {
+                if (speech.Connections[i] is OptionConnection oc && ConditionsMet(oc))
+                {
+                    return true;
+                }
             }
             return false;
         }
@@ -664,6 +756,12 @@ namespace DialogueEditor
 
         private void CreateUIOptions()
         {
+            if (m_currentSpeech == null)
+            {
+                EndConversation();
+                return;
+            }
+
             // Display new options
             if (m_currentSpeech.ConnectionType == Connection.eConnectionType.Option)
             {

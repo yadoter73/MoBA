@@ -58,6 +58,7 @@ public class EnemyAI : MonoBehaviour
 	private bool _hasChasingParam;
 	private bool _hasAttackParam;
 	private bool _hasRoarParam;
+	private float _nextLoopFallbackTime;
 
 	public bool playerInSightRange, playerInAttackRange, playerWaitingToLeave;
 
@@ -132,8 +133,8 @@ public class EnemyAI : MonoBehaviour
 			if (a == null) continue;
 			a.enabled = true;
 			a.applyRootMotion = false;
-			// Держим оба LOD-аниматора (ближний и дальний) в актуальном состоянии при смене дистанции
-			a.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+			// Пропускаем обновление костей/скиннинга за кадром, сохраняя синхронизацию стейт-машины аниматора
+			a.cullingMode = AnimatorCullingMode.CullUpdateTransforms;
 			if (a.runtimeAnimatorController == null && sharedController != null)
 			{
 				a.runtimeAnimatorController = sharedController;
@@ -163,6 +164,8 @@ public class EnemyAI : MonoBehaviour
 
 	private void Update()
 	{
+		if (Time.time < _nextLoopFallbackTime) return;
+		_nextLoopFallbackTime = Time.time + 0.2f;
 		EnsureLoopingFallback();
 	}
 

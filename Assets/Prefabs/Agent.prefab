@@ -250,6 +250,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 8397882410041889293}
     m_Modifications:
+    - target: {fileID: 86951044, guid: af9f138ca1214ae41beb955d1406704e, type: 3}
+      propertyPath: m_CullingMode
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 351784908173550383, guid: af9f138ca1214ae41beb955d1406704e, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
       value: 63.28937
@@ -639,6 +643,10 @@ PrefabInstance:
       value: Enemy
       objectReference: {fileID: 0}
     - target: {fileID: 2547632407910942001, guid: af9f138ca1214ae41beb955d1406704e, type: 3}
+      propertyPath: m_Size
+      value: 9.628137
+      objectReference: {fileID: 0}
+    - target: {fileID: 2547632407910942001, guid: af9f138ca1214ae41beb955d1406704e, type: 3}
       propertyPath: m_FadeMode
       value: 1
       objectReference: {fileID: 0}
@@ -647,8 +655,24 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2547632407910942001, guid: af9f138ca1214ae41beb955d1406704e, type: 3}
+      propertyPath: m_LocalReferencePoint.x
+      value: -0.0070438385
+      objectReference: {fileID: 0}
+    - target: {fileID: 2547632407910942001, guid: af9f138ca1214ae41beb955d1406704e, type: 3}
+      propertyPath: m_LocalReferencePoint.y
+      value: 4.1506343
+      objectReference: {fileID: 0}
+    - target: {fileID: 2547632407910942001, guid: af9f138ca1214ae41beb955d1406704e, type: 3}
+      propertyPath: m_LocalReferencePoint.z
+      value: 0.79256535
+      objectReference: {fileID: 0}
+    - target: {fileID: 2547632407910942001, guid: af9f138ca1214ae41beb955d1406704e, type: 3}
       propertyPath: m_LODs.Array.data[0].screenRelativeHeight
       value: 0.999
+      objectReference: {fileID: 0}
+    - target: {fileID: 2547632407910942001, guid: af9f138ca1214ae41beb955d1406704e, type: 3}
+      propertyPath: m_LODs.Array.data[1].screenRelativeHeight
+      value: 0.01
       objectReference: {fileID: 0}
     - target: {fileID: 2547632407910942002, guid: af9f138ca1214ae41beb955d1406704e, type: 3}
       propertyPath: m_LocalPosition.x
@@ -1638,7 +1662,7 @@ Animator:
   m_Enabled: 1
   m_Avatar: {fileID: 0}
   m_Controller: {fileID: 9100000, guid: 355502ed147ce0f44b33d9c7ab1dca06, type: 2}
-  m_CullingMode: 0
+  m_CullingMode: 1
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
   m_LinearVelocityBlending: 0

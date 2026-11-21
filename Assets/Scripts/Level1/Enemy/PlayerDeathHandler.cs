@@ -392,7 +392,7 @@ public class PlayerDeathHandler : MonoBehaviour
         deathShadow = CreateLabel(
             panelGo.transform,
             "DeathLabelShadow",
-            "Вы погибли...",
+            MoBA.Settings.GameLocalization.Get("You died..."),
             font,
             36f,
             10f,
@@ -402,7 +402,7 @@ public class PlayerDeathHandler : MonoBehaviour
         deathText = CreateLabel(
             panelGo.transform,
             "DeathLabel",
-            "Вы погибли...",
+            MoBA.Settings.GameLocalization.Get("You died..."),
             font,
             36f,
             10f,
@@ -427,7 +427,7 @@ public class PlayerDeathHandler : MonoBehaviour
         subText = CreateLabel(
             panelGo.transform,
             "DeathSubLabel",
-            "ОН НАШЁЛ ТЕБЯ",
+            MoBA.Settings.GameLocalization.Get("IT FOUND YOU"),
             font,
             12.5f,
             20f,

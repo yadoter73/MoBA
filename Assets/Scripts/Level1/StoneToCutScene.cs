@@ -43,6 +43,10 @@ public class Stone : MonoBehaviour, IInteractable, IConditionalInteractionPrompt
 
     public event Action OnSayaSeated;
     public bool IsSayaSeated => _stage == QuestStage.SayaSeatedInHouse;
+    public Transform HouseTransform => _houseTransform;
+    public Transform SayaChairTransform => _targetChair;
+    public Transform DiningTableTransform => _diningTable;
+    public Transform SayaTransform => _saya != null ? _saya.transform : null;
     public InteractionPromptType PromptType => InteractionPromptType.Interact;
     public bool CanInteractNow => _stage == QuestStage.WaitingForStoneApproach;
 
@@ -307,6 +311,9 @@ public class Stone : MonoBehaviour, IInteractable, IConditionalInteractionPrompt
         IDisposable controlLock = _playerControlLock?.AcquireLock(unlockCursor: false);
         CinemachineVirtualCameraBase camStone = null;
         CinemachineVirtualCameraBase camSaya = null;
+        Camera mainCam = Camera.main;
+        CinemachineBrain brain = mainCam != null ? mainCam.GetComponent<CinemachineBrain>() : null;
+        bool wasBrainEnabled = brain != null && brain.enabled;
 
         try
         {
@@ -334,13 +341,6 @@ public class Stone : MonoBehaviour, IInteractable, IConditionalInteractionPrompt
                 _saya.SetActive(false);
             }
 
-            // Включаем первую камеру кат-сцены (вид на бросок камня и реку)
-            if (camStone != null)
-            {
-                camStone.Priority = 100;
-                camStone.enabled = true;
-            }
-
             // Определяем реальную высоту поверхности воды
             float waterY = 7.51f;
             GameObject waterPlane = GameObject.Find("Water_Plane");
@@ -355,31 +355,129 @@ public class Stone : MonoBehaviour, IInteractable, IConditionalInteractionPrompt
             Animator stoneAnim = GetComponent<Animator>();
             if (stoneAnim != null) stoneAnim.enabled = false;
 
-            // Шаг 1: Камень летит по дуге в реку
-            Vector3 stoneStart = transform.position;
             Vector3 stoneWaterEntry = new Vector3(-59.19f, waterY + 0.15f, 153.11f);
-            const float throwDuration = 0.85f;
-            float elapsed = 0f;
-            while (elapsed < throwDuration)
+            Vector3 stoneGroundPos = transform.position;
+            Quaternion stoneGroundRot = transform.rotation;
+
+            // Временно отключаем CinemachineBrain, чтобы плавно управлять камерой от первого лица
+            if (brain != null)
             {
-                elapsed += Time.deltaTime;
-                float u = Mathf.Clamp01(elapsed / throwDuration);
+                brain.enabled = false;
+            }
+
+            // Шаг 1А: Игрок тянется к камню — камень поднимается с земли в правую руку перед камерой
+            if (mainCam != null)
+            {
+                Transform camTf = mainCam.transform;
+                Quaternion camStartRot = camTf.rotation;
+                Vector3 toStoneDir = (stoneGroundPos - camTf.position);
+                Quaternion camLookStoneRot = toStoneDir.sqrMagnitude > 0.001f
+                    ? Quaternion.LookRotation(toStoneDir.normalized, Vector3.up)
+                    : camStartRot;
+
+                const float pickupDuration = 0.58f;
+                float elapsed = 0f;
+                while (elapsed < pickupDuration)
+                {
+                    elapsed += Time.deltaTime;
+                    float u = Mathf.Clamp01(elapsed / pickupDuration);
+                    float easeOut = 1f - Mathf.Pow(1f - u, 3f);
+
+                    // Слегка опускаем взгляд на камень в начале, затем выравниваемся
+                    float lookBlend = Mathf.Sin(u * Mathf.PI) * 0.45f;
+                    camTf.rotation = Quaternion.Slerp(camStartRot, camLookStoneRot, lookBlend);
+
+                    Vector3 handPos = camTf.position + camTf.forward * 0.52f + camTf.right * 0.24f - camTf.up * 0.16f;
+                    Vector3 arcLift = Vector3.up * (Mathf.Sin(u * Mathf.PI) * 0.14f);
+                    transform.position = Vector3.Lerp(stoneGroundPos, handPos, easeOut) + arcLift;
+                    transform.rotation = Quaternion.Slerp(stoneGroundRot, camTf.rotation * Quaternion.Euler(18f, -25f, 12f), easeOut);
+
+                    await UniTask.Yield(PlayerLoopTiming.Update, token);
+                }
+
+                // Шаг 1Б: Игрок поднимает взгляд вверх и в сторону озера, замахиваясь камнем
+                Quaternion camAfterPickupRot = camTf.rotation;
+                Vector3 flatToLake = stoneWaterEntry - camTf.position;
+                flatToLake.y = 0f;
+                if (flatToLake.sqrMagnitude < 0.001f) flatToLake = camTf.forward;
+                Quaternion lakeYawRot = Quaternion.LookRotation(flatToLake.normalized, Vector3.up);
+                Quaternion lookUpSkyRot = lakeYawRot * Quaternion.Euler(-28f, 0f, 0f);
+
+                const float lookUpDuration = 0.82f;
+                elapsed = 0f;
+                while (elapsed < lookUpDuration)
+                {
+                    elapsed += Time.deltaTime;
+                    float u = Mathf.Clamp01(elapsed / lookUpDuration);
+                    float smooth = -(Mathf.Cos(Mathf.PI * u) - 1f) * 0.5f;
+
+                    camTf.rotation = Quaternion.Slerp(camAfterPickupRot, lookUpSkyRot, smooth);
+
+                    // Плавный замах рукой назад и вверх во второй половине поднятия взгляда
+                    float windUp = Mathf.Clamp01((u - 0.35f) / 0.65f);
+                    float windUpSmooth = windUp * windUp * (3f - 2f * windUp);
+                    Vector3 holdOffset = camTf.forward * (0.52f - 0.16f * windUpSmooth)
+                                       + camTf.right * (0.24f + 0.08f * windUpSmooth)
+                                       + camTf.up * (-0.16f + 0.22f * windUpSmooth);
+                    transform.position = camTf.position + holdOffset;
+                    transform.rotation = camTf.rotation * Quaternion.Euler(18f - 26f * windUpSmooth, -25f, 12f);
+
+                    await UniTask.Yield(PlayerLoopTiming.Update, token);
+                }
+
+                // Шаг 1В: Короткий резкий бросок рукой вперёд с лёгкой отдачей камеры
+                Vector3 releaseTargetPos = camTf.position + camTf.forward * 0.68f + camTf.right * 0.14f + camTf.up * 0.04f;
+                Vector3 windUpPos = transform.position;
+                Quaternion throwPitchRot = lookUpSkyRot * Quaternion.Euler(7f, 0f, -1.2f);
+                const float snapDuration = 0.13f;
+                elapsed = 0f;
+                while (elapsed < snapDuration)
+                {
+                    elapsed += Time.deltaTime;
+                    float u = Mathf.Clamp01(elapsed / snapDuration);
+                    float ease = u * u;
+                    camTf.rotation = Quaternion.Slerp(lookUpSkyRot, throwPitchRot, ease);
+                    transform.position = Vector3.Lerp(windUpPos, releaseTargetPos, ease);
+                    await UniTask.Yield(PlayerLoopTiming.Update, token);
+                }
+            }
+
+            // Шаг 2: Камень вылетает из рук и летит по параболе в озеро, камера провожает его взглядом
+            Vector3 stoneStart = transform.position;
+            const float throwDuration = 0.95f;
+            const float arcHeight = 5.6f;
+            float flyElapsed = 0f;
+            while (flyElapsed < throwDuration)
+            {
+                flyElapsed += Time.deltaTime;
+                float u = Mathf.Clamp01(flyElapsed / throwDuration);
                 Vector3 pos = Vector3.Lerp(stoneStart, stoneWaterEntry, u);
-                pos.y += Mathf.Sin(u * Mathf.PI) * 7.8f;
+                pos.y += 4f * arcHeight * u * (1f - u);
                 transform.position = pos;
-                transform.Rotate(new Vector3(320f, 180f, 140f) * Time.deltaTime, Space.Self);
+                transform.Rotate(new Vector3(360f, 210f, 150f) * Time.deltaTime, Space.Self);
+
+                if (mainCam != null)
+                {
+                    Vector3 lookDir = pos - mainCam.transform.position;
+                    if (lookDir.sqrMagnitude > 0.001f)
+                    {
+                        Quaternion targetLook = Quaternion.LookRotation(lookDir.normalized, Vector3.up);
+                        mainCam.transform.rotation = Quaternion.Slerp(mainCam.transform.rotation, targetLook, 1f - Mathf.Exp(-8f * Time.deltaTime));
+                    }
+                }
+
                 await UniTask.Yield(PlayerLoopTiming.Update, token);
             }
             transform.position = stoneWaterEntry;
 
-            // Шаг 2: Камень медленно утопает под поверхностью воды
+            // Шаг 3: Камень уходит под воду и медленно тонет
             Vector3 stoneSinkEnd = new Vector3(stoneWaterEntry.x, waterY - 4.2f, stoneWaterEntry.z);
             const float sinkDuration = 0.75f;
-            elapsed = 0f;
-            while (elapsed < sinkDuration)
+            float sinkElapsed = 0f;
+            while (sinkElapsed < sinkDuration)
             {
-                elapsed += Time.deltaTime;
-                float u = Mathf.Clamp01(elapsed / sinkDuration);
+                sinkElapsed += Time.deltaTime;
+                float u = Mathf.Clamp01(sinkElapsed / sinkDuration);
                 float ease = u * u;
                 transform.position = Vector3.Lerp(stoneWaterEntry, stoneSinkEnd, ease);
                 transform.Rotate(new Vector3(70f, 40f, 30f) * Time.deltaTime, Space.Self);
@@ -390,9 +488,13 @@ public class Stone : MonoBehaviour, IInteractable, IConditionalInteractionPrompt
             if (stoneRend != null) stoneRend.enabled = false;
 
             // Короткая тревожная пауза после того, как камень утонул
-            await UniTask.Delay(TimeSpan.FromSeconds(0.40f), cancellationToken: token);
+            await UniTask.Delay(TimeSpan.FromSeconds(0.45f), cancellationToken: token);
 
-            // Шаг 3: Переключаемся на вторую камеру и выпускаем Саю из глубины реки с анимацией ходьбы по дну/берегу
+            // Возвращаем управление CinemachineBrain и переключаемся на камеру выхода Саи из озера
+            if (brain != null)
+            {
+                brain.enabled = wasBrainEnabled;
+            }
             if (camSaya != null)
             {
                 camSaya.Priority = 110;
@@ -425,11 +527,11 @@ public class Stone : MonoBehaviour, IInteractable, IConditionalInteractionPrompt
                 _sayaPoseRig.SetWalkPlaybackSpeed(0.95f);
 
                 const float emergeWalkDuration = 3.4f;
-                elapsed = 0f;
-                while (elapsed < emergeWalkDuration)
+                float emergeElapsed = 0f;
+                while (emergeElapsed < emergeWalkDuration)
                 {
-                    elapsed += Time.deltaTime;
-                    float u = Mathf.Clamp01(elapsed / emergeWalkDuration);
+                    emergeElapsed += Time.deltaTime;
+                    float u = Mathf.Clamp01(emergeElapsed / emergeWalkDuration);
                     float x = Mathf.Lerp(riverStartXZ.x, shoreEndXZ.x, u);
                     float z = Mathf.Lerp(riverStartXZ.y, shoreEndXZ.y, u);
 
@@ -479,6 +581,10 @@ public class Stone : MonoBehaviour, IInteractable, IConditionalInteractionPrompt
         }
         finally
         {
+            if (brain != null)
+            {
+                brain.enabled = wasBrainEnabled;
+            }
             controlLock?.Dispose();
         }
     }
@@ -661,7 +767,7 @@ public class Stone : MonoBehaviour, IInteractable, IConditionalInteractionPrompt
                 ConversationManager.Instance.StartConversation(_npcConversation);
 
                 float elapsed = 0f;
-                const float maxWait = 3.8f;
+                const float maxWait = 5.6f;
                 while (!conversationEnded && elapsed < maxWait)
                 {
                     elapsed += Time.deltaTime;
@@ -877,6 +983,58 @@ public class Stone : MonoBehaviour, IInteractable, IConditionalInteractionPrompt
 
             EnsureSayaScaleAndCollision(_saya, isSitting: true);
             if (sayaCollider != null) sayaCollider.enabled = true;
+        }
+
+        _stage = QuestStage.SayaSeatedInHouse;
+        OnSayaSeated?.Invoke();
+    }
+
+    /// <summary>
+    /// Мгновенно переводит Саю в сидячее положение за столом при загрузке сохранения.
+    /// </summary>
+    public void RestoreSayaSeatedStateImmediate()
+    {
+        if (_stage == QuestStage.SayaSeatedInHouse) return;
+
+        Collider stoneCol = GetComponent<Collider>();
+        if (stoneCol != null) stoneCol.enabled = false;
+        Animator stoneAnim = GetComponent<Animator>();
+        if (stoneAnim != null) stoneAnim.enabled = false;
+
+        if (_lineToSaya != null) _lineToSaya.ClearQuestTarget(0f);
+        if (_sayaRoped != null) _sayaRoped.SetActive(false);
+
+        if (_saya != null)
+        {
+            _saya.SetActive(true);
+            float floorY = _houseTransform != null ? _houseTransform.position.y + 0.46f : 3.05f;
+            Vector3 sitForwardDir = Vector3.forward;
+            if (_targetChair != null && _diningTable != null)
+            {
+                Vector3 toTable = _diningTable.position - _targetChair.position;
+                toTable.y = 0f;
+                if (toTable.sqrMagnitude > 0.001f) sitForwardDir = toTable.normalized;
+            }
+            Vector3 awayFromTableDir = -sitForwardDir;
+            float seatSurfaceY = floorY + 1.80f;
+            if (_targetChair != null)
+            {
+                Renderer r = _targetChair.GetComponentInChildren<Renderer>(true);
+                if (r != null) seatSurfaceY = Mathf.Lerp(r.bounds.min.y, r.bounds.max.y, 0.46f);
+            }
+
+            if (_sayaPoseRig != null)
+            {
+                _sayaPoseRig.TransitionToSittingAsync(
+                    _targetChair,
+                    Quaternion.LookRotation(sitForwardDir, Vector3.up),
+                    floorY,
+                    seatSurfaceY,
+                    awayFromTableDir).Forget();
+            }
+
+            CapsuleCollider sayaCol = EnsureSayaScaleAndCollision(_saya, isSitting: true);
+            if (sayaCol != null) sayaCol.enabled = true;
         }
 
         _stage = QuestStage.SayaSeatedInHouse;

@@ -1,4 +1,5 @@
 using MoBA.Interaction;
+using MoBA.Settings;
 using PrimeTween;
 using TMPro;
 using UnityEngine;
@@ -8,6 +9,7 @@ public class UIInteract : MonoBehaviour
 {
     private const string DefaultInteractText = "Press E to Interact";
     private const string TalkPromptText = "Press E to talk";
+    private const float PromptTopOffsetY = -62f;
 
     [Inject] private InteractionManager _interactionManager;
 
@@ -21,6 +23,7 @@ public class UIInteract : MonoBehaviour
     {
         _group = GetComponent<CanvasGroup>();
         _promptLabel = GetComponentInChildren<TMP_Text>(true);
+        ConfigurePromptLayout();
         if (_promptLabel != null && !string.IsNullOrEmpty(_promptLabel.text))
         {
             _interactText = _promptLabel.text;
@@ -30,6 +33,7 @@ public class UIInteract : MonoBehaviour
         {
             _interactionManager.OnInteractionPromptChanged.AddListener(OnPromptChanged);
         }
+        GameSettingsService.OnLanguageChanged += RefreshPromptLabel;
     }
 
     private void OnDisable()
@@ -40,10 +44,36 @@ public class UIInteract : MonoBehaviour
     private void OnDestroy()
     {
         _transitionSequence.Stop();
+        GameSettingsService.OnLanguageChanged -= RefreshPromptLabel;
         if (_interactionManager != null)
         {
             _interactionManager.OnInteractionPromptChanged.RemoveListener(OnPromptChanged);
         }
+    }
+
+    private void ConfigurePromptLayout()
+    {
+        if (_promptLabel == null) return;
+        RectTransform rt = _promptLabel.rectTransform;
+        if (rt == null) return;
+
+        rt.anchorMin = new Vector2(0.5f, 1f);
+        rt.anchorMax = new Vector2(0.5f, 1f);
+        rt.pivot = new Vector2(0.5f, 1f);
+        rt.anchoredPosition = new Vector2(0f, PromptTopOffsetY);
+    }
+
+    private void RefreshPromptLabel()
+    {
+        if (_promptLabel == null || !_activePrompt.HasValue) return;
+        _promptLabel.text = ResolvePromptText(_activePrompt.Value);
+    }
+
+    private string ResolvePromptText(InteractionPromptType promptType)
+    {
+        return promptType == InteractionPromptType.Talk
+            ? GameLocalization.Get(TalkPromptText)
+            : GameLocalization.TranslateAny(_interactText);
     }
 
     public void OnPromptChanged(InteractionPromptType? promptType)
@@ -64,7 +94,7 @@ public class UIInteract : MonoBehaviour
             return;
         }
 
-        string nextText = promptType.Value == InteractionPromptType.Talk ? TalkPromptText : _interactText;
+        string nextText = ResolvePromptText(promptType.Value);
         bool switchingWhileVisible = _group.alpha > 0.05f && _activePrompt.HasValue && _activePrompt.Value != promptType.Value;
         _activePrompt = promptType;
 

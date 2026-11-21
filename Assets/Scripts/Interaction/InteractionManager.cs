@@ -16,9 +16,13 @@ public class InteractionManager : MonoBehaviour
 
 	private RaycastHit _hitInfo;
 	[SerializeField] private float _interactRange = 5f;
+	private readonly RaycastHit[] _interactHits = new RaycastHit[16];
 	private readonly RaycastHit[] _obstructionHits = new RaycastHit[16];
 	private bool ray { get; set; }
 	private InteractionPromptType? _currentPrompt;
+	private Collider _cachedPromptCollider;
+	private IConditionalInteractionPrompt _cachedConditionalPrompt;
+	private InteractionPromptType? _cachedFixedPrompt;
 
 	public UnityEvent<bool> OnInteractebleEvent { get; private set; } = new();
 	public UnityEvent<InteractionPromptType?> OnInteractionPromptChanged { get; private set; } = new();
@@ -49,19 +53,64 @@ public class InteractionManager : MonoBehaviour
 
 		Ray r = new Ray(alax.position, alax.forward);
 		RaycastHit prevHit = _hitInfo;
-		ray = Physics.Raycast(r, out _hitInfo, _interactRange, _layerMask);
+		ray = TryFindBestInteractHit(r, out _hitInfo);
 
-		if (ray && IsBlockedByObstacle(r, _hitInfo))
-		{
-			ray = false;
-			_hitInfo = default;
-		}
-
-		InteractionPromptType? nextPrompt = ResolvePromptType(_hitInfo.collider);
+		InteractionPromptType? nextPrompt = ResolvePromptTypeCached(_hitInfo.collider);
 		if (_hitInfo.collider != prevHit.collider || nextPrompt != _currentPrompt)
 		{
 			PublishPromptState(nextPrompt);
 		}
+	}
+
+	private bool TryFindBestInteractHit(Ray rayToTarget, out RaycastHit bestHit)
+	{
+		bestHit = default;
+		int count = Physics.RaycastNonAlloc(rayToTarget, _interactHits, _interactRange, _layerMask);
+		if (count <= 0) return false;
+
+		RaycastHit closestGeneric = default;
+		float closestGenericDist = float.MaxValue;
+		RaycastHit closestKey = default;
+		float closestKeyDist = float.MaxValue;
+
+		for (int i = 0; i < count; i++)
+		{
+			RaycastHit candidate = _interactHits[i];
+			if (candidate.collider == null) continue;
+			if (IsBlockedByObstacle(rayToTarget, candidate)) continue;
+
+			KeyPickup keyPickup = candidate.collider.GetComponentInParent<KeyPickup>();
+			if (keyPickup != null)
+			{
+				// Если ключ лежит в открытом ящике, даём ему приоритет перед самим ящиком (CupBoard)
+				if (keyPickup.CanInteractNow && candidate.distance < closestKeyDist)
+				{
+					closestKeyDist = candidate.distance;
+					closestKey = candidate;
+				}
+				continue;
+			}
+
+			if (candidate.distance < closestGenericDist)
+			{
+				closestGenericDist = candidate.distance;
+				closestGeneric = candidate;
+			}
+		}
+
+		if (closestKeyDist < float.MaxValue)
+		{
+			bestHit = closestKey;
+			return true;
+		}
+
+		if (closestGenericDist < float.MaxValue)
+		{
+			bestHit = closestGeneric;
+			return true;
+		}
+
+		return false;
 	}
 
 	private bool IsBlockedByObstacle(Ray rayToTarget, RaycastHit targetHit)
@@ -86,6 +135,7 @@ public class InteractionManager : MonoBehaviour
 		Transform targetTransform = targetHit.collider.transform;
 		Component interactableComp = targetTransform.GetComponentInParent<IInteractable>() as Component;
 		Transform interactableRoot = interactableComp != null ? interactableComp.transform : targetTransform;
+		bool isKeyTarget = targetTransform.GetComponentInParent<KeyPickup>() != null;
 
 		for (int i = 0; i < count; i++)
 		{
@@ -96,6 +146,8 @@ public class InteractionManager : MonoBehaviour
 			// Игнорируем коллайдеры самого игрока и дочерние коллайдеры самой цели взаимодействия
 			if (playerRoot != null && hitTf.IsChildOf(playerRoot)) continue;
 			if (hitTf.IsChildOf(interactableRoot)) continue;
+			// Выпуклый коллайдер открытого ящика, в котором лежит ключ, не должен перекрывать подбор ключа
+			if (isKeyTarget && targetTransform.IsChildOf(hitTf) && col.GetComponentInParent<CupBoard>() != null) continue;
 
 			// Если расстояние до препятствия почти равно расстоянию до цели (< 0.20м разницы),
 			// это скользящее касание дверной коробки/прилавка/петель прямо у объекта, а не стена перед ним.
@@ -131,6 +183,38 @@ public class InteractionManager : MonoBehaviour
 			}
 		}
 #endif
+	}
+
+	private InteractionPromptType? ResolvePromptTypeCached(Collider hitCollider)
+	{
+		if (hitCollider == null)
+		{
+			_cachedPromptCollider = null;
+			_cachedConditionalPrompt = null;
+			_cachedFixedPrompt = null;
+			return null;
+		}
+
+		if (hitCollider == _cachedPromptCollider)
+		{
+			if (_cachedConditionalPrompt != null)
+			{
+				return _cachedConditionalPrompt.CanInteractNow ? _cachedConditionalPrompt.PromptType : (InteractionPromptType?)null;
+			}
+			return _cachedFixedPrompt;
+		}
+
+		_cachedPromptCollider = hitCollider;
+		_cachedConditionalPrompt = hitCollider.GetComponent<IConditionalInteractionPrompt>()
+			?? hitCollider.GetComponentInParent<IConditionalInteractionPrompt>();
+		if (_cachedConditionalPrompt != null)
+		{
+			_cachedFixedPrompt = null;
+			return _cachedConditionalPrompt.CanInteractNow ? _cachedConditionalPrompt.PromptType : (InteractionPromptType?)null;
+		}
+
+		_cachedFixedPrompt = ResolvePromptType(hitCollider);
+		return _cachedFixedPrompt;
 	}
 
 	private static InteractionPromptType? ResolvePromptType(Collider hitCollider)

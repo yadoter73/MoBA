@@ -1,4 +1,5 @@
 using MoBA.Narrative;
+using MoBA.Settings;
 using PrimeTween;
 using TMPro;
 using UnityEngine;
@@ -37,6 +38,7 @@ namespace MoBA.UI
         {
             if (_questService != null) _questService.OnStageChanged += HandleStageChanged;
             if (_groceryList != null) _groceryList.OnProgressChanged += HandleProgressChanged;
+            GameSettingsService.OnLanguageChanged += HandleLanguageChanged;
             RefreshView(immediate: true);
         }
 
@@ -45,6 +47,15 @@ namespace MoBA.UI
             _fadeTween.Stop();
             if (_questService != null) _questService.OnStageChanged -= HandleStageChanged;
             if (_groceryList != null) _groceryList.OnProgressChanged -= HandleProgressChanged;
+            GameSettingsService.OnLanguageChanged -= HandleLanguageChanged;
+        }
+
+        private void HandleLanguageChanged()
+        {
+            if (_groceryList != null)
+            {
+                UpdateText(_groceryList.CollectedTotal, _groceryList.TotalRequired);
+            }
         }
 
         private void HandleStageChanged(KeyQuestStage stage)
@@ -84,7 +95,7 @@ namespace MoBA.UI
         {
             if (_counterText != null)
             {
-                _counterText.text = $"Продукты: {collected}/{total}";
+                _counterText.text = GameLocalization.FormatGroceryCounter(collected, total);
             }
         }
     }

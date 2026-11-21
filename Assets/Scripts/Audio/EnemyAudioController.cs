@@ -25,13 +25,14 @@ namespace MoBA.Audio
         [SerializeField] private float _moveVolume = 0.90f;
         [SerializeField] private float _spotVolume = 1.0f;
         [SerializeField] private float _patrolPitch = 1.0f;
-        [SerializeField] private float _chasePitch = 1.24f;
+        [SerializeField] private float _chasePitch = 1.85f;
         [SerializeField] private float _spotCooldown = 4.5f;
         [SerializeField] private float _minDistance = 4.5f;
         [SerializeField] private float _maxDistance = 55f;
 
         private bool _isMoving;
         private bool _isChasing;
+        private bool _pausedByTimeOrDeath;
         private float _nextAllowedSpotTime;
 
         private void Awake()
@@ -46,13 +47,22 @@ namespace MoBA.Audio
 
         private void Update()
         {
-            if (Time.timeScale <= 0f || PlayerDeathHandler.IsDead)
+            bool blocked = Time.timeScale <= 0f || PlayerDeathHandler.IsDead;
+            if (blocked)
             {
-                StopAll();
+                if (!_pausedByTimeOrDeath)
+                {
+                    _pausedByTimeOrDeath = true;
+                    StopAll();
+                }
                 return;
             }
 
-            UpdateMovementLoop();
+            if (_pausedByTimeOrDeath)
+            {
+                _pausedByTimeOrDeath = false;
+                UpdateMovementLoop();
+            }
         }
 
         public void OnMovementStateChanged(bool moving, bool chasing)
@@ -100,11 +110,13 @@ namespace MoBA.Audio
             }
 
             float targetPitch = _isGiantMonster
-                ? (_isChasing ? _chasePitch : _patrolPitch)
+                ? (_isChasing ? Mathf.Max(_chasePitch, 1.85f) : _patrolPitch)
                 : 1.0f;
 
             _moveLoopSource.pitch = targetPitch;
-            _moveLoopSource.volume = _moveVolume;
+            _moveLoopSource.volume = (_isGiantMonster && _isChasing)
+                ? Mathf.Clamp01(_moveVolume * 1.08f)
+                : _moveVolume;
             _moveLoopSource.loop = true;
 
             if (_moveLoopSource.clip != _moveLoopClip)

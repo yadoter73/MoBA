@@ -1,4 +1,5 @@
 using System;
+using MoBA.SaveSystem;
 using UnityEngine;
 using Zenject;
 
@@ -16,6 +17,7 @@ namespace MoBA.Narrative
         private const string GoToStoreHint = "Дойти до продуктового";
         private const string CollectGoodsHint = "Взять у продавца: водка, 3 яблока, хлеб";
         private const string BringToSayaHint = "Вернуться к Сае";
+        private const string SitAtTableHint = "Сесть за стол";
 
         private readonly Stone _stone;
         private readonly TextRenaming _textRenaming;
@@ -39,6 +41,7 @@ namespace MoBA.Narrative
             || Stage == KeyQuestStage.BringToSaya;
         public bool IsMonsterOrderCompleted => _monsterOrderCompleted;
         public bool AreCounterGoodsUnlocked => Stage == KeyQuestStage.CollectGoods;
+        public bool CanSitForDinner => Stage == KeyQuestStage.DinnerWithSaya;
 
         public event Action<KeyQuestStage> OnStageChanged;
         public event Action OnCounterGoodsUnlocked;
@@ -163,8 +166,54 @@ namespace MoBA.Narrative
             if (Stage != KeyQuestStage.BringToSaya) return;
 
             ClearGuidance();
+            SetStage(KeyQuestStage.DinnerWithSaya);
+            _textRenaming?.ShowQuestObjective(SitAtTableHint);
+            GameSaveService.SaveCurrentGame(showNotification: true);
+        }
+
+        public void NotifyDinnerFinished()
+        {
+            if (Stage != KeyQuestStage.DinnerWithSaya) return;
+
+            ClearGuidance();
             _textRenaming?.ClearQuestObjective(0.6f);
             SetStage(KeyQuestStage.Completed);
+            GameSaveService.SaveCurrentGame(showNotification: false);
+        }
+
+        public void RestoreState(KeyQuestStage stage, bool hasGateKey, bool monsterOrderCompleted)
+        {
+            HasGateKey = hasGateKey;
+            _monsterOrderCompleted = monsterOrderCompleted;
+            ClearGuidance();
+            SetStage(stage);
+
+            switch (stage)
+            {
+                case KeyQuestStage.TalkToSaya:
+                    _textRenaming?.ShowQuestObjective(TalkToSayaHint);
+                    break;
+                case KeyQuestStage.FindKey:
+                    UpdateHouseObjectiveText();
+                    break;
+                case KeyQuestStage.GoToGate:
+                    TransitionToGoToGate();
+                    break;
+                case KeyQuestStage.CollectGoods:
+                    _textRenaming?.ShowQuestObjective(CollectGoodsHint);
+                    OnCounterGoodsUnlocked?.Invoke();
+                    break;
+                case KeyQuestStage.BringToSaya:
+                    _textRenaming?.ShowQuestObjective(BringToSayaHint);
+                    ActivateGuidance(_config != null ? _config.SayaTarget : null, deactivateDist: 3.0f);
+                    break;
+                case KeyQuestStage.DinnerWithSaya:
+                    _textRenaming?.ShowQuestObjective(SitAtTableHint);
+                    break;
+                default:
+                    _textRenaming?.ClearQuestObjective(0.1f);
+                    break;
+            }
         }
 
         private void HandleSayaSeated()
@@ -211,16 +260,18 @@ namespace MoBA.Narrative
                 _pointerImpulse.SetQuestGuidanceTarget(target, enableWorldPointers: false);
             }
 
+            // Жёлтая стрелка на земле разрешена исключительно в начальной сцене при первом поиске повешенной Саи.
+            // Во всех остальных заданиях и фазах квеста она строго выключена.
             if (_lineToSaya != null)
             {
-                _lineToSaya.SetQuestTarget(target.gameObject, deactivateDist: deactivateDist);
+                _lineToSaya.DeactivateImmediate();
             }
         }
 
         private void ClearGuidance()
         {
             _pointerImpulse?.ClearQuestGuidance();
-            _lineToSaya?.ClearQuestTarget(0.5f);
+            _lineToSaya?.DeactivateImmediate();
         }
 
         private void SetStage(KeyQuestStage nextStage)

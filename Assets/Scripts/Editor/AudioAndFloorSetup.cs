@@ -4,27 +4,35 @@ using System.IO;
 using KinematicCharacterController;
 using KinematicCharacterController.Examples;
 using MoBA.Audio;
+using MoBA.Hallucinations;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace MoBA.EditorTools
 {
     /// <summary>
-    /// Копирует и проверяет 8 аудиофайлов из Downloads в Assets/Audio,
-    /// настраивает слой Floor и маски земли KCC/RegObj, подключает PlayerFootstepAudio и EnemyAudioController.
+    /// Копирует и проверяет аудиофайлы из Downloads в Assets/Audio,
+    /// настраивает слой Floor и маски земли KCC/RegObj, подключает PlayerFootstepAudio, HallucinationDirector и EnemyAudioController.
     /// </summary>
+    [InitializeOnLoad]
     public static class AudioAndFloorSetup
     {
+        private const string NewAudioAutoRunMarkerPath = "Library/MoBA_AudioPreload_v2.done";
         public const string AudioFolder = "Assets/Audio";
         private const string DownloadsFolder = @"C:\Users\user\Downloads";
         private const string FloorLayerName = "Floor";
 
         public const string FloorWalkFile = "Хождение по полу.mp3";
         public const string FloorRunFile = "Бег ппо полу.mp3";
+        public const string FloorJumpFile = "Прыжок с дерева.mp3";
+        public const string FloorLandFile = "падение на дереве.mp3";
         public const string GrassWalkFile = "Хождение человека по траве.mp3";
         public const string GrassRunFile = "Бег по траве.mp3";
         public const string GrassJumpFile = "Прыжок человека на траве.mp3";
+        public const string GrassLandFile = "падение на траву.mp3";
+        public const string HallucinationFile = "Галюны.mp3";
         public const string GiantStepFile = "ШагГиганскогоМонстра.wav";
         public const string GiantSpotFile = "ЗвукКогдаГиганскийМонстрУвиделТебя.wav";
         public const string RegularChaseFile = "ЗвукиБегаОбычногоМонстраЗатобой.mp3";
@@ -33,13 +41,53 @@ namespace MoBA.EditorTools
         {
             FloorWalkFile,
             FloorRunFile,
+            FloorJumpFile,
+            FloorLandFile,
             GrassWalkFile,
             GrassRunFile,
             GrassJumpFile,
+            GrassLandFile,
+            HallucinationFile,
             GiantStepFile,
             GiantSpotFile,
             RegularChaseFile
         };
+
+        static AudioAndFloorSetup()
+        {
+            EditorApplication.delayCall += TryAutoBindNewAudioOnce;
+        }
+
+        private static void TryAutoBindNewAudioOnce()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+            if (EditorApplication.isCompiling || EditorApplication.isUpdating)
+            {
+                EditorApplication.delayCall += TryAutoBindNewAudioOnce;
+                return;
+            }
+            if (File.Exists(NewAudioAutoRunMarkerPath)) return;
+
+            File.WriteAllText(NewAudioAutoRunMarkerPath, DateTime.UtcNow.ToString("O"));
+            ImportAndBindNew4Sounds();
+        }
+
+        [MenuItem("MoBA/Audio/Import & Bind New 4 Sounds")]
+        public static void ImportAndBindNew4Sounds()
+        {
+            EnsureAudioFilesImported();
+            Scene active = SceneManager.GetActiveScene();
+            Scene scene = active.IsValid() && string.Equals(active.name, "Level1", StringComparison.OrdinalIgnoreCase)
+                ? active
+                : EditorSceneManager.OpenScene("Assets/Scenes/Level1.unity", OpenSceneMode.Single);
+            if (!scene.IsValid()) return;
+
+            ConfigurePlayerAudioInScene(scene);
+            ConfigureHallucinationAudioInScene(scene);
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveOpenScenes();
+            AssetDatabase.SaveAssets();
+        }
 
         public static void EnsureAudioFilesImported()
         {
@@ -72,6 +120,20 @@ namespace MoBA.EditorTools
             foreach (string fileName in AllAudioFiles)
             {
                 string assetPath = $"{AudioFolder}/{fileName}";
+                AudioImporter importer = AssetImporter.GetAtPath(assetPath) as AudioImporter;
+                if (importer != null)
+                {
+                    AudioImporterSampleSettings settings = importer.defaultSampleSettings;
+                    if (!settings.preloadAudioData || importer.loadInBackground)
+                    {
+                        settings.preloadAudioData = true;
+                        settings.loadType = AudioClipLoadType.DecompressOnLoad;
+                        importer.defaultSampleSettings = settings;
+                        importer.loadInBackground = false;
+                        importer.SaveAndReimport();
+                    }
+                }
+
                 AudioClip clip = AssetDatabase.LoadAssetAtPath<AudioClip>(assetPath);
                 if (clip != null)
                 {
@@ -139,7 +201,7 @@ namespace MoBA.EditorTools
             so.FindProperty("_moveVolume").floatValue = 0.95f;
             so.FindProperty("_spotVolume").floatValue = 1.0f;
             so.FindProperty("_patrolPitch").floatValue = 1.0f;
-            so.FindProperty("_chasePitch").floatValue = 1.24f;
+            so.FindProperty("_chasePitch").floatValue = 1.85f;
             so.FindProperty("_spotCooldown").floatValue = 4.5f;
             so.FindProperty("_minDistance").floatValue = 8f;
             so.FindProperty("_maxDistance").floatValue = 95f;
@@ -330,9 +392,12 @@ namespace MoBA.EditorTools
             so.FindProperty("_jumpSource").objectReferenceValue = jumpSource;
             so.FindProperty("_floorWalkClip").objectReferenceValue = LoadClip(FloorWalkFile);
             so.FindProperty("_floorRunClip").objectReferenceValue = LoadClip(FloorRunFile);
+            so.FindProperty("_floorJumpClip").objectReferenceValue = LoadClip(FloorJumpFile);
+            so.FindProperty("_floorLandClip").objectReferenceValue = LoadClip(FloorLandFile);
             so.FindProperty("_grassWalkClip").objectReferenceValue = LoadClip(GrassWalkFile);
             so.FindProperty("_grassRunClip").objectReferenceValue = LoadClip(GrassRunFile);
             so.FindProperty("_grassJumpClip").objectReferenceValue = LoadClip(GrassJumpFile);
+            so.FindProperty("_grassLandClip").objectReferenceValue = LoadClip(GrassLandFile);
             so.ApplyModifiedProperties();
 
             EditorUtility.SetDirty(locoSource);
@@ -343,6 +408,36 @@ namespace MoBA.EditorTools
             PrefabUtility.RecordPrefabInstancePropertyModifications(footstep);
 
             Debug.Log("[AudioAndFloorSetup] PlayerFootstepAudio и AudioSource настроены на ExampleCharacter.");
+        }
+
+        private static void ConfigureHallucinationAudioInScene(Scene scene)
+        {
+            HallucinationDirector director = null;
+            foreach (GameObject root in scene.GetRootGameObjects())
+            {
+                director = root.GetComponentInChildren<HallucinationDirector>(true);
+                if (director != null) break;
+            }
+            if (director == null)
+            {
+                Debug.LogWarning("[AudioAndFloorSetup] HallucinationDirector не найден в Level1.");
+                return;
+            }
+
+            AudioSource src = director.GetComponent<AudioSource>();
+            if (src == null) src = Undo.AddComponent<AudioSource>(director.gameObject);
+            src.playOnAwake = false;
+            src.loop = false;
+            src.spatialBlend = 0f;
+
+            var so = new SerializedObject(director);
+            so.FindProperty("_hallucinationAudioSource").objectReferenceValue = src;
+            so.FindProperty("_hallucinationClip").objectReferenceValue = LoadClip(HallucinationFile);
+            so.ApplyModifiedProperties();
+
+            EditorUtility.SetDirty(src);
+            EditorUtility.SetDirty(director);
+            Debug.Log("[AudioAndFloorSetup] Звук галлюцинаций (Галюны.mp3) привязан к HallucinationDirector.");
         }
 
         private static void Configure3DSource(AudioSource src, AudioClip clip, bool loop, float minDist, float maxDist, float volume)

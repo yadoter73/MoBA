@@ -6,6 +6,7 @@ using KinematicCharacterController.Examples;
 using MoBA.Player;
 using PrimeTween;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace MoBA.Narrative
 {
@@ -57,12 +58,22 @@ namespace MoBA.Narrative
                     subscribed = true;
                     ConversationManager.Instance.StartConversation(conversation);
 
+                    float elapsedUnscaled = 0f;
+                    const float maxSafetyTimeout = 45f;
                     while (!conversationEnded && !token.IsCancellationRequested)
                     {
                         if (ConversationManager.Instance == null || !ConversationManager.Instance.IsConversationActive)
                         {
                             break;
                         }
+
+                        elapsedUnscaled += Time.unscaledDeltaTime;
+                        if (IsManualExitRequested(elapsedUnscaled) || elapsedUnscaled >= maxSafetyTimeout)
+                        {
+                            ConversationManager.Instance.EndConversation();
+                            break;
+                        }
+
                         await UniTask.Yield(PlayerLoopTiming.Update, token);
                     }
                 }
@@ -94,6 +105,22 @@ namespace MoBA.Narrative
                 controlLock?.Dispose();
                 IsRunning = false;
             }
+        }
+
+        private static bool IsManualExitRequested(float elapsedUnscaled)
+        {
+            if (elapsedUnscaled < 0.35f) return false;
+
+            Keyboard kb = Keyboard.current;
+            if (kb != null && (kb.escapeKey.wasPressedThisFrame ||
+                               kb.spaceKey.wasPressedThisFrame ||
+                               kb.enterKey.wasPressedThisFrame ||
+                               kb.eKey.wasPressedThisFrame))
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 }
